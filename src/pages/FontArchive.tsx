@@ -1,15 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useFontContext } from '@/context/FontContext';
 import FontCard from '@/components/ui/FontCard';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
 import { 
   PlusCircle, 
   Search, 
   SlidersHorizontal,
-  BookOpen
+  BookOpen,
+  Seedling
 } from 'lucide-react';
 import { 
   Select,
@@ -19,6 +19,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { FontCategory } from '@/types';
+import PlantFontModal from '@/components/modals/PlantFontModal';
 
 const FontArchive = () => {
   const { 
@@ -29,6 +30,8 @@ const FontArchive = () => {
     categoryFilter,
     setCategoryFilter
   } = useFontContext();
+  
+  const [showPlantModal, setShowPlantModal] = useState(false);
   
   const filteredFonts = fonts.filter(font => {
     const matchesSearch = font.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -48,11 +51,9 @@ const FontArchive = () => {
             Your collection of {fonts.length} fonts
           </p>
         </div>
-        <Button asChild>
-          <Link to="/fonts/add">
-            <PlusCircle className="mr-2 h-5 w-5" /> 
-            Add Font
-          </Link>
+        <Button onClick={() => setShowPlantModal(true)} className="gap-2">
+          <Seedling className="h-5 w-5" /> 
+          Plant a Font
         </Button>
       </div>
       
@@ -115,6 +116,12 @@ const FontArchive = () => {
           )}
         </>
       )}
+      
+      {/* Plant Font Modal */}
+      <PlantFontModal 
+        open={showPlantModal} 
+        onOpenChange={setShowPlantModal} 
+      />
     </div>
   );
 };

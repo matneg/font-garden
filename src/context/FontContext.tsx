@@ -112,6 +112,7 @@ interface FontContextType {
   setCategoryFilter: (category: FontCategory | 'all') => void;
   getFontById: (id: string) => Font | undefined;
   getProjectById: (id: string) => Project | undefined;
+  addFont: (font: Font) => void; // Add this new function
 }
 
 const FontContext = createContext<FontContextType | undefined>(undefined);
@@ -143,6 +144,11 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return projects.find(project => project.id === id);
   };
 
+  // Add a new function to add fonts
+  const addFont = (font: Font): void => {
+    setFonts(prevFonts => [...prevFonts, font]);
+  };
+
   return (
     <FontContext.Provider
       value={{
@@ -155,7 +161,8 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSearchQuery,
         setCategoryFilter,
         getFontById,
-        getProjectById
+        getProjectById,
+        addFont
       }}
     >
       {children}
