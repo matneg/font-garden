@@ -30,9 +30,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useFontContext } from '@/context/FontContext';
-import { useToast } from '@/hooks/use-toast';
+import { Sprout, BookOpen } from 'lucide-react';
 import { FontCategory } from '@/types';
-import { Sparkles, BookOpen, Sprout } from 'lucide-react';
 
 // Define the form schema with zod
 const formSchema = z.object({
@@ -55,7 +54,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   onOpenChange 
 }) => {
   const { addFont } = useFontContext();
-  const { toast } = useToast();
   
   const form = useForm<PlantFontFormValues>({
     resolver: zodResolver(formSchema),
@@ -68,32 +66,21 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     },
   });
 
-  const onSubmit = (values: PlantFontFormValues) => {
-    // Create a new font object
-    const newFont = {
-      id: `font-${Date.now()}`, // Generate a unique ID (ideally this would come from the backend)
+  const onSubmit = async (values: PlantFontFormValues) => {
+    // Create a new font object and save to Supabase
+    await addFont({
       name: values.name,
       fontFamily: values.fontFamily,
       category: values.category as FontCategory,
       notes: values.notes || '',
       isCustom: values.isCustom,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      projectCount: 0
-    };
-    
-    // Add the font to the context
-    addFont(newFont);
+      fontFilePath: null,
+      fontFormat: null,
+    });
     
     // Close the modal and reset the form
     onOpenChange(false);
     form.reset();
-    
-    // Show success toast
-    toast({
-      title: "Font planted! 🌱",
-      description: `${values.name} has been added to your collection`,
-    });
   };
 
   return (

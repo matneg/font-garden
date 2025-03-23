@@ -9,6 +9,122 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      external_references: {
+        Row: {
+          created_at: string
+          font_id: string | null
+          id: string
+          project_name: string
+          url: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          font_id?: string | null
+          id?: string
+          project_name: string
+          url?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          font_id?: string | null
+          id?: string
+          project_name?: string
+          url?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_references_font_id_fkey"
+            columns: ["font_id"]
+            isOneToOne: false
+            referencedRelation: "fonts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      font_projects: {
+        Row: {
+          annotation: string | null
+          created_at: string
+          font_id: string | null
+          id: string
+          project_id: string | null
+        }
+        Insert: {
+          annotation?: string | null
+          created_at?: string
+          font_id?: string | null
+          id?: string
+          project_id?: string | null
+        }
+        Update: {
+          annotation?: string | null
+          created_at?: string
+          font_id?: string | null
+          id?: string
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "font_projects_font_id_fkey"
+            columns: ["font_id"]
+            isOneToOne: false
+            referencedRelation: "fonts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "font_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fonts: {
+        Row: {
+          category: Database["public"]["Enums"]["font_category"]
+          created_at: string
+          font_family: string | null
+          font_file_path: string | null
+          font_format: Database["public"]["Enums"]["font_format"] | null
+          id: string
+          is_custom: boolean
+          name: string
+          notes: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["font_category"]
+          created_at?: string
+          font_family?: string | null
+          font_file_path?: string | null
+          font_format?: Database["public"]["Enums"]["font_format"] | null
+          id?: string
+          is_custom?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["font_category"]
+          created_at?: string
+          font_family?: string | null
+          font_file_path?: string | null
+          font_format?: Database["public"]["Enums"]["font_format"] | null
+          id?: string
+          is_custom?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -33,6 +149,33 @@ export type Database = {
         }
         Relationships: []
       }
+      projects: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -41,7 +184,20 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      font_category:
+        | "serif"
+        | "sans-serif"
+        | "display"
+        | "handwriting"
+        | "monospace"
+        | "other"
+      font_format:
+        | "woff"
+        | "woff2"
+        | "truetype"
+        | "opentype"
+        | "svg"
+        | "embedded-opentype"
     }
     CompositeTypes: {
       [_ in never]: never

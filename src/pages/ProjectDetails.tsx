@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFontContext } from '@/context/FontContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,24 +15,46 @@ import {
 } from 'lucide-react';
 import FontCard from '@/components/ui/FontCard';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { getProjectById, fonts } = useFontContext();
+  const navigate = useNavigate();
+  const { getProjectById, fonts, deleteProject, addFontToProject, removeFontFromProject } = useFontContext();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   
   // Get the project using the id from URL params
   const project = getProjectById(id || '');
   
-  // Filter fonts that are used in this project (in a real app this would be a proper relationship)
-  // For this demo, we'll just show some fonts
-  const projectFonts = fonts.slice(0, project?.fontCount || 0);
+  // Get all fonts associated with this project
+  const projectFonts = project ? fonts.filter(font => {
+    // In a real implementation, this would use font_projects relation
+    return font.projectCount && font.projectCount > 0;
+  }).slice(0, project?.fontCount || 0) : []; // This is just a placeholder until we implement the real relation
   
   const handleEdit = () => {
     toast.info('Edit functionality will be implemented soon');
   };
   
-  const handleDelete = () => {
-    toast.info('Delete functionality will be implemented soon');
+  const handleDelete = async () => {
+    if (!project) return;
+    
+    try {
+      await deleteProject(project.id);
+      navigate('/projects');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.error('Failed to delete the project');
+    }
   };
   
   if (!project) {
@@ -80,7 +102,7 @@ const ProjectDetails = () => {
             <Pencil className="h-4 w-4 mr-2" />
             Edit
           </Button>
-          <Button variant="destructive" onClick={handleDelete}>
+          <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
             <Trash2 className="h-4 w-4 mr-2" />
             Delete
           </Button>
@@ -137,6 +159,25 @@ const ProjectDetails = () => {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the project "{project.name}" and remove its association with all fonts.
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
