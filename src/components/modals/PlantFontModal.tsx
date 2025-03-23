@@ -32,7 +32,7 @@ import {
 import { useFontContext } from '@/context/FontContext';
 import { useToast } from '@/hooks/use-toast';
 import { FontCategory } from '@/types';
-import { Sparkles, BookOpen, Seedling } from 'lucide-react';
+import { Sparkles, BookOpen, Sprout } from 'lucide-react';
 
 // Define the form schema with zod
 const formSchema = z.object({
@@ -101,7 +101,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <Seedling className="h-5 w-5 text-green-500" /> 
+            <Sprout className="h-5 w-5 text-green-500" /> 
             <DialogTitle>Plant a Font</DialogTitle>
           </div>
           <DialogDescription>
@@ -191,7 +191,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                 Cancel
               </Button>
               <Button type="submit" className="gap-2">
-                <Seedling className="h-4 w-4" />
+                <Sprout className="h-4 w-4" />
                 Plant Font
               </Button>
             </DialogFooter>

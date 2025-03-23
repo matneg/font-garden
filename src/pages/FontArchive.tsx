@@ -9,7 +9,7 @@ import {
   Search, 
   SlidersHorizontal,
   BookOpen,
-  Seedling
+  Sprout
 } from 'lucide-react';
 import { 
   Select,
@@ -52,7 +52,7 @@ const FontArchive = () => {
           </p>
         </div>
         <Button onClick={() => setShowPlantModal(true)} className="gap-2">
-          <Seedling className="h-5 w-5" /> 
+          <Sprout className="h-5 w-5" /> 
           Plant a Font
         </Button>
       </div>
