@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { FontProvider } from "./context/FontContext";
 import { AuthProvider } from "./context/AuthContext";
 import Layout from "./components/layout/Layout";
@@ -37,7 +37,11 @@ const App = () => (
                 
                 {/* Protected routes */}
                 <Route element={<ProtectedRoute />}>
-                  <Route element={<Layout />}>
+                  <Route element={
+                    <Layout>
+                      <Outlet />
+                    </Layout>
+                  }>
                     <Route path="/" element={<Index />} />
                     <Route path="/fonts" element={<FontArchive />} />
                     <Route path="/fonts/:id" element={<FontDetails />} />
