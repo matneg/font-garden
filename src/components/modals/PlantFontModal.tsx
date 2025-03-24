@@ -75,6 +75,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   fontFamily: z.string().min(2, 'Font family must be at least 2 characters'),
   category: z.enum(['serif', 'sans-serif', 'display', 'handwriting', 'monospace', 'other'] as const),
+  tags: z.string().optional(),
   notes: z.string().optional(),
   isCustom: z.boolean().default(false),
   googleFont: z.string().optional(),
@@ -94,6 +95,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   const { addFont } = useFontContext();
   const [fontSource, setFontSource] = useState<'google' | 'custom'>('google');
   const [selectedFont, setSelectedFont] = useState<string | null>(null);
+  const [selectedFontData, setSelectedFontData] = useState<GoogleFont | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [fontFile, setFontFile] = useState<File | null>(null);
   const [fontPreview, setFontPreview] = useState<string | null>(null);
@@ -108,6 +110,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
       name: '',
       fontFamily: '',
       category: 'sans-serif',
+      tags: '',
       notes: '',
       isCustom: false,
       googleFont: '',
@@ -153,6 +156,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   // Handle Google Font selection
   const handleSelectGoogleFont = (font: GoogleFont) => {
     setSelectedFont(font.family);
+    setSelectedFontData(font);
     form.setValue('name', font.family);
     form.setValue('fontFamily', `${font.family}, ${font.category}`);
     form.setValue('category', font.category as FontCategory);
@@ -196,6 +200,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
       fontFamily: values.fontFamily,
       category: values.category as FontCategory,
       notes: values.notes || '',
+      tags: values.tags || '',
       isCustom: values.isCustom,
       fontFilePath: fontFile ? URL.createObjectURL(fontFile) : null,
       fontFormat: fontFile ? determineFileFormat(fontFile.name) : null,
@@ -209,6 +214,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   const resetForm = () => {
     form.reset();
     setSelectedFont(null);
+    setSelectedFontData(null);
     setSearchQuery('');
     setFontFile(null);
     setFontPreview(null);
@@ -345,15 +351,24 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
 
                   {selectedFont && (
                     <div className="p-4 border rounded-md bg-muted/50">
-                      <style>
-                        @import url('https://fonts.googleapis.com/css2?family={selectedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap');
-                      </style>
+                      <style dangerouslySetInnerHTML={{
+                        __html: `
+                          @import url('https://fonts.googleapis.com/css2?family=${selectedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap');
+                        `
+                      }} />
                       <p className="text-lg" style={{ fontFamily: selectedFont }}>
                         The quick brown fox jumps over the lazy dog
                       </p>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Font: {selectedFont}
-                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <p className="text-sm text-muted-foreground">
+                          Font: {selectedFont}
+                        </p>
+                        {selectedFontData && (
+                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
+                            {selectedFontData.category}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -388,12 +403,14 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
 
                   {fontPreview && (
                     <div className="p-4 border rounded-md bg-muted/50">
-                      <style dangerouslySetInnerHTML={{__html: `
-                        @font-face {
-                          font-family: "CustomFont";
-                          src: url(${fontPreview});
-                        }
-                      `}} />
+                      <style dangerouslySetInnerHTML={{
+                        __html: `
+                          @font-face {
+                            font-family: "CustomFont";
+                            src: url(${fontPreview});
+                          }
+                        `
+                      }} />
                       <p className="text-lg" style={{ fontFamily: 'CustomFont' }}>
                         The quick brown fox jumps over the lazy dog
                       </p>
@@ -422,28 +439,22 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                 />
               </TabsContent>
               
-              {/* Common Fields */}
+              {/* Custom Tags Field (replaces the Category dropdown) */}
               <FormField
                 control={form.control}
-                name="category"
+                name="tags"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="serif">Serif</SelectItem>
-                        <SelectItem value="sans-serif">Sans-serif</SelectItem>
-                        <SelectItem value="display">Display</SelectItem>
-                        <SelectItem value="handwriting">Handwriting</SelectItem>
-                        <SelectItem value="monospace">Monospace</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Custom Tags</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="e.g., modern, display, favorite" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Add custom tags separated by commas to organize your fonts
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

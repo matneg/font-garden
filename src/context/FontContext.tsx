@@ -50,6 +50,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fontFamily: font.font_family,
         category: font.category,
         notes: font.notes || '',
+        tags: font.tags || '',
         isCustom: font.is_custom,
         fontFilePath: font.font_file_path || null,
         fontFormat: font.font_format || null,
@@ -153,6 +154,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           font_family: font.fontFamily,
           category: font.category,
           notes: font.notes,
+          tags: font.tags,
           is_custom: font.isCustom,
           font_file_path: font.fontFilePath,
           font_format: font.fontFormat
