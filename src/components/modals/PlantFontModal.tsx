@@ -37,6 +37,19 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -46,8 +59,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFontContext } from '@/context/FontContext';
-import { Sprout, BookOpen, Upload, Search, FileText } from 'lucide-react';
+import { Sprout, BookOpen, Upload, Search, FileText, CheckIcon, ChevronsUpDown } from 'lucide-react';
 import { FontCategory, FontFormat } from '@/types';
+import { cn } from '@/lib/utils';
 
 // Popular Google Fonts - this would ideally come from an API
 const POPULAR_GOOGLE_FONTS = [
@@ -104,6 +118,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [fontFile, setFontFile] = useState<File | null>(null);
   const [fontPreview, setFontPreview] = useState<string | null>(null);
+  const [commandOpen, setCommandOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<PlantFontFormValues>({
@@ -118,6 +133,11 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     },
   });
 
+  // Filter fonts based on search query
+  const filteredFonts = POPULAR_GOOGLE_FONTS.filter(font => 
+    font.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // Handle Google Font selection
   const handleSelectGoogleFont = (font: { name: string, category: string }) => {
     setSelectedFont(font.name);
@@ -126,6 +146,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     form.setValue('category', font.category as FontCategory);
     form.setValue('isCustom', false);
     form.setValue('googleFont', font.name);
+    setCommandOpen(false);
   };
 
   // Handle Custom Font File Upload
@@ -156,11 +177,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     }
   }, [fontSource, form]);
 
-  // Filter fonts based on search query
-  const filteredFonts = POPULAR_GOOGLE_FONTS.filter(font => 
-    font.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   const onSubmit = async (values: PlantFontFormValues) => {
     // Create a new font object and save to Supabase
     await addFont({
@@ -184,6 +200,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     setSearchQuery('');
     setFontFile(null);
     setFontPreview(null);
+    setCommandOpen(false);
   };
 
   // Helper to determine font format from filename
@@ -227,46 +244,52 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
               <TabsContent value="google" className="space-y-4">
-                {/* Google Font Selector */}
+                {/* Google Font Selector with Smart Suggestions */}
                 <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        type="text"
-                        placeholder="Search Google Fonts..."
-                        className="pl-8"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
-                          {selectedFont || "Select Font"} <BookOpen className="ml-2 h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-56 max-h-[300px] overflow-y-auto">
-                        <DropdownMenuLabel>Google Fonts</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                          {filteredFonts.length > 0 ? (
-                            filteredFonts.map((font) => (
-                              <DropdownMenuItem 
+                  <Popover open={commandOpen} onOpenChange={setCommandOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={commandOpen}
+                        className="w-full justify-between"
+                      >
+                        {selectedFont
+                          ? POPULAR_GOOGLE_FONTS.find(font => font.name === selectedFont)?.name
+                          : "Search Google Fonts..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search font..." 
+                          value={searchQuery}
+                          onValueChange={setSearchQuery}
+                        />
+                        <CommandEmpty>No font found.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandList className="max-h-[300px]">
+                            {filteredFonts.map((font) => (
+                              <CommandItem
                                 key={font.name}
-                                onClick={() => handleSelectGoogleFont(font)}
+                                value={font.name}
+                                onSelect={() => handleSelectGoogleFont(font)}
                               >
-                                {font.name}
-                              </DropdownMenuItem>
-                            ))
-                          ) : (
-                            <DropdownMenuItem disabled>No fonts found</DropdownMenuItem>
-                          )}
-                        </DropdownMenuGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                                <span className="font-medium">{font.name}</span>
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  {font.category}
+                                </span>
+                                {selectedFont === font.name && (
+                                  <CheckIcon className="ml-auto h-4 w-4" />
+                                )}
+                              </CommandItem>
+                            ))}
+                          </CommandList>
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
 
                   {selectedFont && (
                     <div className="p-4 border rounded-md bg-muted/50">
