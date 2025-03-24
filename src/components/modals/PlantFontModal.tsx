@@ -47,7 +47,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useFontContext } from '@/context/FontContext';
 import { Sprout, BookOpen, Upload, Search, FileText } from 'lucide-react';
-import { FontCategory } from '@/types';
+import { FontCategory, FontFormat } from '@/types';
 
 // Popular Google Fonts - this would ideally come from an API
 const POPULAR_GOOGLE_FONTS = [
@@ -187,7 +187,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   };
 
   // Helper to determine font format from filename
-  const determineFileFormat = (filename: string): string | null => {
+  const determineFileFormat = (filename: string): FontFormat | null => {
     const extension = filename.split('.').pop()?.toLowerCase();
     switch (extension) {
       case 'woff': return 'woff';
@@ -310,12 +310,14 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
 
                   {fontPreview && (
                     <div className="p-4 border rounded-md bg-muted/50">
-                      <style jsx>{`
+                      <style>
+                        {`
                         @font-face {
                           font-family: "CustomFont";
                           src: url(${fontPreview});
                         }
-                      `}</style>
+                        `}
+                      </style>
                       <p className="text-lg" style={{ fontFamily: 'CustomFont' }}>
                         The quick brown fox jumps over the lazy dog
                       </p>
