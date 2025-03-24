@@ -59,37 +59,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFontContext } from '@/context/FontContext';
-import { Sprout, BookOpen, Upload, Search, FileText, CheckIcon, ChevronsUpDown } from 'lucide-react';
+import { Sprout, BookOpen, Upload, Search, FileText, CheckIcon, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { FontCategory, FontFormat } from '@/types';
 import { cn } from '@/lib/utils';
 
-// Popular Google Fonts - this would ideally come from an API
-const POPULAR_GOOGLE_FONTS = [
-  { name: 'Roboto', category: 'sans-serif' },
-  { name: 'Open Sans', category: 'sans-serif' },
-  { name: 'Lato', category: 'sans-serif' },
-  { name: 'Montserrat', category: 'sans-serif' },
-  { name: 'Oswald', category: 'sans-serif' },
-  { name: 'Source Sans Pro', category: 'sans-serif' },
-  { name: 'Slabo 27px', category: 'serif' },
-  { name: 'Raleway', category: 'sans-serif' },
-  { name: 'PT Sans', category: 'sans-serif' },
-  { name: 'Merriweather', category: 'serif' },
-  { name: 'Playfair Display', category: 'serif' },
-  { name: 'Poppins', category: 'sans-serif' },
-  { name: 'Nunito', category: 'sans-serif' },
-  { name: 'Nunito Sans', category: 'sans-serif' },
-  { name: 'Ubuntu', category: 'sans-serif' },
-  { name: 'JetBrains Mono', category: 'monospace' },
-  { name: 'Dancing Script', category: 'handwriting' },
-  { name: 'Pacifico', category: 'handwriting' },
-  { name: 'Comic Neue', category: 'handwriting' },
-  { name: 'Indie Flower', category: 'handwriting' },
-  { name: 'Space Mono', category: 'monospace' },
-  { name: 'Inconsolata', category: 'monospace' },
-  { name: 'Bebas Neue', category: 'display' },
-  { name: 'Bangers', category: 'display' },
-];
+// Define interface for Google Font data
+interface GoogleFont {
+  family: string;
+  category: string;
+  variants: string[];
+}
 
 // Define the form schema with zod
 const formSchema = z.object({
@@ -120,6 +99,8 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   const [fontPreview, setFontPreview] = useState<string | null>(null);
   const [commandOpen, setCommandOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [googleFonts, setGoogleFonts] = useState<GoogleFont[]>([]);
+  const [loadingFonts, setLoadingFonts] = useState(false);
   
   const form = useForm<PlantFontFormValues>({
     resolver: zodResolver(formSchema),
@@ -133,19 +114,50 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     },
   });
 
+  // Fetch Google Fonts from the API
+  useEffect(() => {
+    const fetchGoogleFonts = async () => {
+      setLoadingFonts(true);
+      try {
+        const response = await fetch(
+          'https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyAOES8EmKhuJEnsn9kS1XKBpxxp-TgN8Jc'
+        );
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch Google Fonts');
+        }
+        
+        const data = await response.json();
+        setGoogleFonts(data.items || []);
+      } catch (error) {
+        console.error('Error fetching Google Fonts:', error);
+        // Fallback to the hardcoded list
+        setGoogleFonts(FALLBACK_GOOGLE_FONTS.map(font => ({
+          family: font.name,
+          category: font.category,
+          variants: ['regular']
+        })));
+      } finally {
+        setLoadingFonts(false);
+      }
+    };
+
+    fetchGoogleFonts();
+  }, []);
+
   // Filter fonts based on search query
-  const filteredFonts = POPULAR_GOOGLE_FONTS.filter(font => 
-    font.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredFonts = googleFonts.filter(font => 
+    font.family.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Handle Google Font selection
-  const handleSelectGoogleFont = (font: { name: string, category: string }) => {
-    setSelectedFont(font.name);
-    form.setValue('name', font.name);
-    form.setValue('fontFamily', `${font.name}, ${font.category}`);
+  const handleSelectGoogleFont = (font: GoogleFont) => {
+    setSelectedFont(font.family);
+    form.setValue('name', font.family);
+    form.setValue('fontFamily', `${font.family}, ${font.category}`);
     form.setValue('category', font.category as FontCategory);
     form.setValue('isCustom', false);
-    form.setValue('googleFont', font.name);
+    form.setValue('googleFont', font.family);
     setCommandOpen(false);
   };
 
@@ -217,6 +229,34 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     }
   };
 
+  // Fallback list of Google Fonts if API fails
+  const FALLBACK_GOOGLE_FONTS = [
+    { name: 'Roboto', category: 'sans-serif' },
+    { name: 'Open Sans', category: 'sans-serif' },
+    { name: 'Lato', category: 'sans-serif' },
+    { name: 'Montserrat', category: 'sans-serif' },
+    { name: 'Oswald', category: 'sans-serif' },
+    { name: 'Source Sans Pro', category: 'sans-serif' },
+    { name: 'Slabo 27px', category: 'serif' },
+    { name: 'Raleway', category: 'sans-serif' },
+    { name: 'PT Sans', category: 'sans-serif' },
+    { name: 'Merriweather', category: 'serif' },
+    { name: 'Playfair Display', category: 'serif' },
+    { name: 'Poppins', category: 'sans-serif' },
+    { name: 'Nunito', category: 'sans-serif' },
+    { name: 'Nunito Sans', category: 'sans-serif' },
+    { name: 'Ubuntu', category: 'sans-serif' },
+    { name: 'JetBrains Mono', category: 'monospace' },
+    { name: 'Dancing Script', category: 'handwriting' },
+    { name: 'Pacifico', category: 'handwriting' },
+    { name: 'Comic Neue', category: 'handwriting' },
+    { name: 'Indie Flower', category: 'handwriting' },
+    { name: 'Space Mono', category: 'monospace' },
+    { name: 'Inconsolata', category: 'monospace' },
+    { name: 'Bebas Neue', category: 'display' },
+    { name: 'Bangers', category: 'display' },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={(newOpen) => {
       if (!newOpen) {
@@ -255,9 +295,13 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                         className="w-full justify-between"
                       >
                         {selectedFont
-                          ? POPULAR_GOOGLE_FONTS.find(font => font.name === selectedFont)?.name
+                          ? googleFonts.find(font => font.family === selectedFont)?.family
                           : "Search Google Fonts..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        {loadingFonts ? (
+                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        )}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-full p-0">
@@ -267,24 +311,32 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                           value={searchQuery}
                           onValueChange={setSearchQuery}
                         />
-                        <CommandEmpty>No font found.</CommandEmpty>
+                        <CommandEmpty>
+                          {loadingFonts ? 'Loading fonts...' : 'No font found.'}
+                        </CommandEmpty>
                         <CommandGroup>
                           <CommandList className="max-h-[300px]">
-                            {filteredFonts.map((font) => (
-                              <CommandItem
-                                key={font.name}
-                                value={font.name}
-                                onSelect={() => handleSelectGoogleFont(font)}
-                              >
-                                <span className="font-medium">{font.name}</span>
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                  {font.category}
-                                </span>
-                                {selectedFont === font.name && (
-                                  <CheckIcon className="ml-auto h-4 w-4" />
-                                )}
-                              </CommandItem>
-                            ))}
+                            {loadingFonts ? (
+                              <div className="flex items-center justify-center py-6">
+                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                              </div>
+                            ) : (
+                              filteredFonts.map((font) => (
+                                <CommandItem
+                                  key={font.family}
+                                  value={font.family}
+                                  onSelect={() => handleSelectGoogleFont(font)}
+                                >
+                                  <span className="font-medium">{font.family}</span>
+                                  <span className="ml-2 text-xs text-muted-foreground">
+                                    {font.category}
+                                  </span>
+                                  {selectedFont === font.family && (
+                                    <CheckIcon className="ml-auto h-4 w-4" />
+                                  )}
+                                </CommandItem>
+                              ))
+                            )}
                           </CommandList>
                         </CommandGroup>
                       </Command>
@@ -293,6 +345,9 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
 
                   {selectedFont && (
                     <div className="p-4 border rounded-md bg-muted/50">
+                      <style>
+                        @import url('https://fonts.googleapis.com/css2?family={selectedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap');
+                      </style>
                       <p className="text-lg" style={{ fontFamily: selectedFont }}>
                         The quick brown fox jumps over the lazy dog
                       </p>
@@ -333,14 +388,12 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
 
                   {fontPreview && (
                     <div className="p-4 border rounded-md bg-muted/50">
-                      <style>
-                        {`
+                      <style dangerouslySetInnerHTML={{__html: `
                         @font-face {
                           font-family: "CustomFont";
                           src: url(${fontPreview});
                         }
-                        `}
-                      </style>
+                      `}} />
                       <p className="text-lg" style={{ fontFamily: 'CustomFont' }}>
                         The quick brown fox jumps over the lazy dog
                       </p>
