@@ -1,14 +1,16 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useFontContext } from '@/context/FontContext';
 import GardenGrid from '@/components/garden/GardenGrid';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { PlusCircle, Leaf } from 'lucide-react';
 import { motion } from 'framer-motion';
+import PlantFontModal from '@/components/modals/PlantFontModal';
 
 const Index = () => {
   const { fonts, loading } = useFontContext();
+  const [showPlantModal, setShowPlantModal] = useState(false);
   
   return (
     <div className="container mx-auto px-4 py-8 page-transition">
@@ -26,11 +28,9 @@ const Index = () => {
           Your personal typography garden. Cultivate your collection and watch your fonts bloom.
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
-          <Button asChild size="lg">
-            <Link to="/fonts/add">
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Plant a Font
-            </Link>
+          <Button onClick={() => setShowPlantModal(true)} size="lg">
+            <PlusCircle className="mr-2 h-5 w-5" />
+            Plant a Font
           </Button>
           <Button variant="outline" asChild size="lg">
             <Link to="/fonts">
@@ -56,6 +56,12 @@ const Index = () => {
           <GardenGrid fonts={fonts} />
         )}
       </div>
+
+      {/* Plant Font Modal */}
+      <PlantFontModal 
+        open={showPlantModal} 
+        onOpenChange={setShowPlantModal} 
+      />
     </div>
   );
 };
