@@ -313,7 +313,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start">
+                    <PopoverContent className="w-full p-0 max-h-[300px]" align="start">
                       <Command>
                         <CommandInput 
                           placeholder="Search font..." 
@@ -323,8 +323,8 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                         <CommandEmpty>
                           {loadingFonts ? 'Loading fonts...' : 'No font found.'}
                         </CommandEmpty>
-                        <CommandList className="max-h-[200px]">
-                          <ScrollArea className="h-[200px]">
+                        <CommandList>
+                          <ScrollArea className="h-[250px]">
                             <CommandGroup>
                               {loadingFonts ? (
                                 <div className="flex items-center justify-center py-6">
