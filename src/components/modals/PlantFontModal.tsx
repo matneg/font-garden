@@ -351,23 +351,23 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
 
                   {selectedFont && (
                     <div className="p-4 border rounded-md bg-muted/50">
-                      <style dangerouslySetInnerHTML={{
-                        __html: `
-                          @import url('https://fonts.googleapis.com/css2?family=${selectedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap');
-                        `
-                      }} />
-                      <p className="text-lg" style={{ fontFamily: selectedFont }}>
-                        The quick brown fox jumps over the lazy dog
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <p className="text-sm text-muted-foreground">
-                          Font: {selectedFont}
+                      <div className="flex flex-col space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm">{selectedFont}</span>
+                          {selectedFontData && (
+                            <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
+                              {selectedFontData.category}
+                            </span>
+                          )}
+                        </div>
+                        <style dangerouslySetInnerHTML={{
+                          __html: `
+                            @import url('https://fonts.googleapis.com/css2?family=${selectedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap');
+                          `
+                        }} />
+                        <p className="text-lg" style={{ fontFamily: selectedFont }}>
+                          The quick brown fox jumps over the lazy dog
                         </p>
-                        {selectedFontData && (
-                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
-                            {selectedFontData.category}
-                          </span>
-                        )}
                       </div>
                     </div>
                   )}
