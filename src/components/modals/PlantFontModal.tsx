@@ -162,6 +162,8 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     form.setValue('category', font.category as FontCategory);
     form.setValue('isCustom', false);
     form.setValue('googleFont', font.family);
+    
+    // Important: We're setting commandOpen to false to close the dropdown after selection
     setCommandOpen(false);
   };
 
@@ -300,8 +302,8 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                         aria-expanded={commandOpen}
                         className="w-full justify-between"
                       >
-                        {selectedFont
-                          ? googleFonts.find(font => font.family === selectedFont)?.family
+                        {selectedFont 
+                          ? selectedFont 
                           : "Search Google Fonts..."}
                         {loadingFonts ? (
                           <Loader2 className="ml-2 h-4 w-4 animate-spin" />
@@ -349,16 +351,14 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                     </PopoverContent>
                   </Popover>
 
-                  {selectedFont && (
+                  {selectedFont && selectedFontData && (
                     <div className="p-4 border rounded-md bg-muted/50">
                       <div className="flex flex-col space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-sm">{selectedFont}</span>
-                          {selectedFontData && (
-                            <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
-                              {selectedFontData.category}
-                            </span>
-                          )}
+                          <span className="font-medium">{selectedFont}</span>
+                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
+                            {selectedFontData.category}
+                          </span>
                         </div>
                         <style dangerouslySetInnerHTML={{
                           __html: `
