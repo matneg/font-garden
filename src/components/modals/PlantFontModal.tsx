@@ -62,6 +62,7 @@ import { useFontContext } from '@/context/FontContext';
 import { Sprout, BookOpen, Upload, Search, FileText, CheckIcon, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { FontCategory, FontFormat } from '@/types';
 import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Define interface for Google Font data
 interface GoogleFont {
@@ -163,7 +164,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     form.setValue('isCustom', false);
     form.setValue('googleFont', font.family);
     
-    // Important: We're setting commandOpen to false to close the dropdown after selection
+    // Close the dropdown after selection
     setCommandOpen(false);
   };
 
@@ -303,7 +304,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                         className="w-full justify-between"
                       >
                         {selectedFont 
-                          ? selectedFont 
+                          ? `${selectedFont}`
                           : "Search Google Fonts..."}
                         {loadingFonts ? (
                           <Loader2 className="ml-2 h-4 w-4 animate-spin" />
@@ -312,7 +313,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                         )}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
+                    <PopoverContent className="w-full p-0" align="start">
                       <Command>
                         <CommandInput 
                           placeholder="Search font..." 
@@ -322,31 +323,34 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                         <CommandEmpty>
                           {loadingFonts ? 'Loading fonts...' : 'No font found.'}
                         </CommandEmpty>
-                        <CommandGroup>
-                          <CommandList className="max-h-[300px]">
-                            {loadingFonts ? (
-                              <div className="flex items-center justify-center py-6">
-                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                              </div>
-                            ) : (
-                              filteredFonts.map((font) => (
-                                <CommandItem
-                                  key={font.family}
-                                  value={font.family}
-                                  onSelect={() => handleSelectGoogleFont(font)}
-                                >
-                                  <span className="font-medium">{font.family}</span>
-                                  <span className="ml-2 text-xs text-muted-foreground">
-                                    {font.category}
-                                  </span>
-                                  {selectedFont === font.family && (
-                                    <CheckIcon className="ml-auto h-4 w-4" />
-                                  )}
-                                </CommandItem>
-                              ))
-                            )}
-                          </CommandList>
-                        </CommandGroup>
+                        <CommandList className="max-h-[200px]">
+                          <ScrollArea className="h-[200px]">
+                            <CommandGroup>
+                              {loadingFonts ? (
+                                <div className="flex items-center justify-center py-6">
+                                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                                </div>
+                              ) : (
+                                filteredFonts.map((font) => (
+                                  <CommandItem
+                                    key={font.family}
+                                    value={font.family}
+                                    onSelect={() => handleSelectGoogleFont(font)}
+                                    className="flex justify-between items-center"
+                                  >
+                                    <span className="font-medium">{font.family}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {font.category}
+                                    </span>
+                                    {selectedFont === font.family && (
+                                      <CheckIcon className="ml-2 h-4 w-4" />
+                                    )}
+                                  </CommandItem>
+                                ))
+                              )}
+                            </CommandGroup>
+                          </ScrollArea>
+                        </CommandList>
                       </Command>
                     </PopoverContent>
                   </Popover>
