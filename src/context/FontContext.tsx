@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Font, Project, FontCategory } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -33,7 +32,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<FontCategory | 'all'>('all');
 
-  // Fetch fonts from Supabase
   const fetchFonts = async () => {
     try {
       const { data, error } = await supabase
@@ -43,14 +41,13 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
-      // Transform data to match Font interface
       const transformedFonts: Font[] = data.map(font => ({
         id: font.id,
         name: font.name,
         fontFamily: font.font_family,
         category: font.category,
         notes: font.notes || '',
-        tags: font.tags || '', // Make sure to handle tags properly
+        tags: font.tags || '',
         isCustom: font.is_custom,
         fontFilePath: font.font_file_path || null,
         fontFormat: font.font_format || null,
@@ -66,7 +63,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Fetch projects from Supabase
   const fetchProjects = async () => {
     try {
       const { data, error } = await supabase
@@ -76,7 +72,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
-      // Transform data to match Project interface
       const transformedProjects: Project[] = data.map(project => ({
         id: project.id,
         name: project.name,
@@ -93,7 +88,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -103,7 +97,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchData();
 
-    // Set up real-time subscriptions
     const fontsSubscription = supabase
       .channel('public:fonts')
       .on('postgres_changes', 
@@ -128,7 +121,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       .subscribe();
 
-    // Cleanup subscriptions
     return () => {
       supabase.removeChannel(fontsSubscription);
       supabase.removeChannel(projectsSubscription);
@@ -144,7 +136,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return projects.find(project => project.id === id);
   };
 
-  // Add a new font
   const addFont = async (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>) => {
     try {
       const { data, error } = await supabase
@@ -154,7 +145,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           font_family: font.fontFamily,
           category: font.category,
           notes: font.notes,
-          tags: font.tags, // Make sure tags is included here
+          tags: font.tags,
           is_custom: font.isCustom,
           font_file_path: font.fontFilePath,
           font_format: font.fontFormat
@@ -171,7 +162,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Add a new project
   const addProject = async (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'fontCount'>) => {
     try {
       const { data, error } = await supabase
@@ -192,7 +182,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Add a font to a project
   const addFontToProject = async (fontId: string, projectId: string) => {
     try {
       const { error } = await supabase
@@ -212,7 +201,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Remove a font from a project
   const removeFontFromProject = async (fontId: string, projectId: string) => {
     try {
       const { error } = await supabase
@@ -230,7 +218,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Delete a font
   const deleteFont = async (id: string) => {
     try {
       const { error } = await supabase
@@ -248,7 +235,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Delete a project
   const deleteProject = async (id: string) => {
     try {
       const { error } = await supabase

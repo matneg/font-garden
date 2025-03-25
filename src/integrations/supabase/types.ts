@@ -94,6 +94,7 @@ export type Database = {
           is_custom: boolean
           name: string
           notes: string | null
+          tags: string | null
           updated_at: string
           user_id: string | null
         }
@@ -107,6 +108,7 @@ export type Database = {
           is_custom?: boolean
           name: string
           notes?: string | null
+          tags?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -120,6 +122,7 @@ export type Database = {
           is_custom?: boolean
           name?: string
           notes?: string | null
+          tags?: string | null
           updated_at?: string
           user_id?: string | null
         }
