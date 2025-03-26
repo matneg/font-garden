@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,15 +48,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useFontContext } from '@/context/FontContext';
 import { Sprout, BookOpen, Upload, Search, FileText, CheckIcon, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { FontCategory, FontFormat } from '@/types';
@@ -124,23 +114,31 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
       setLoadingFonts(true);
       try {
         const response = await fetch(
-          'https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyAOES8EmKhuJEnsn9kS1XKBpxxp-TgN8Jc'
+          'https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyAOES8EmKhuJEnsn9kS1XKBpxxp-TgN8Jc&sort=popularity'
         );
         
         if (!response.ok) {
-          throw new Error('Failed to fetch Google Fonts');
+          throw new Error(`Failed to fetch Google Fonts: ${response.status}`);
         }
         
         const data = await response.json();
-        setGoogleFonts(data.items || []);
+        
+        if (!data.items || !Array.isArray(data.items)) {
+          throw new Error('Invalid response format from Google Fonts API');
+        }
+        
+        console.log('Google Fonts API response:', { count: data.items.length, sample: data.items.slice(0, 3) });
+        setGoogleFonts(data.items);
       } catch (error) {
         console.error('Error fetching Google Fonts:', error);
         // Fallback to the hardcoded list
-        setGoogleFonts(FALLBACK_GOOGLE_FONTS.map(font => ({
+        const fallbackFonts = FALLBACK_GOOGLE_FONTS.map(font => ({
           family: font.name,
           category: font.category,
           variants: ['regular']
-        })));
+        }));
+        console.log('Using fallback fonts:', fallbackFonts);
+        setGoogleFonts(fallbackFonts);
       } finally {
         setLoadingFonts(false);
       }
@@ -156,11 +154,27 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
 
   // Handle Google Font selection
   const handleSelectGoogleFont = (font: GoogleFont) => {
+    console.log('Selected font:', font);
+    
+    // Validate font data before using it
+    if (!font || !font.family) {
+      console.error('Invalid font data:', font);
+      return;
+    }
+    
+    // Ensure the category is one of the valid FontCategory values
+    let category = font.category || 'sans-serif';
+    if (!['serif', 'sans-serif', 'display', 'handwriting', 'monospace', 'other'].includes(category)) {
+      category = 'other'; // Fallback to 'other' for unknown categories
+    }
+    
     setSelectedFont(font.family);
     setSelectedFontData(font);
+    
+    // Update form values
     form.setValue('name', font.family);
-    form.setValue('fontFamily', `${font.family}, ${font.category}`);
-    form.setValue('category', font.category as FontCategory);
+    form.setValue('fontFamily', `${font.family}, ${category}`);
+    form.setValue('category', category as FontCategory);
     form.setValue('isCustom', false);
     form.setValue('googleFont', font.family);
     
@@ -295,7 +309,10 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
               <TabsContent value="google" className="space-y-4">
                 {/* Google Font Selector with Smart Suggestions */}
                 <div className="space-y-4">
-                  <Popover open={commandOpen} onOpenChange={setCommandOpen}>
+                  <Popover open={commandOpen} onOpenChange={(open) => {
+                    console.log('Command menu state changing to:', open);
+                    setCommandOpen(open);
+                  }}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
@@ -364,12 +381,17 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                             {selectedFontData.category}
                           </span>
                         </div>
-                        <style dangerouslySetInnerHTML={{
-                          __html: `
-                            @import url('https://fonts.googleapis.com/css2?family=${selectedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap');
-                          `
-                        }} />
-                        <p className="text-lg" style={{ fontFamily: selectedFont }}>
+                        {/* Load the font using React-safe approach */}
+                        <link 
+                          href={`https://fonts.googleapis.com/css2?family=${selectedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap`} 
+                          rel="stylesheet" 
+                        />
+                        <p 
+                          className="text-lg" 
+                          style={{ 
+                            fontFamily: `"${selectedFont}", ${selectedFontData.category || 'sans-serif'}` 
+                          }}
+                        >
                           The quick brown fox jumps over the lazy dog
                         </p>
                       </div>
