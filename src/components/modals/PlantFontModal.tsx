@@ -35,24 +35,10 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { useFontContext } from '@/context/FontContext';
-import { Sprout, BookOpen, Upload, Search, FileText, CheckIcon, ChevronsUpDown, Loader2 } from 'lucide-react';
+import { Sprout, Upload, FileText, ChevronsUpDown, Loader2, CheckIcon, X, Search } from 'lucide-react';
 import { FontCategory, FontFormat } from '@/types';
 import { cn } from '@/lib/utils';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 // Define interface for Google Font data
 interface GoogleFont {
@@ -90,8 +76,9 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [fontFile, setFontFile] = useState<File | null>(null);
   const [fontPreview, setFontPreview] = useState<string | null>(null);
-  const [commandOpen, setCommandOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [googleFonts, setGoogleFonts] = useState<GoogleFont[]>([]);
   const [loadingFonts, setLoadingFonts] = useState(false);
   
@@ -107,6 +94,20 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
       googleFont: '',
     },
   });
+
+  // Handle clicks outside the dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Fetch Google Fonts from the API
   useEffect(() => {
@@ -152,20 +153,14 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     font.family.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Handle Google Font selection
-  const handleSelectGoogleFont = (font: GoogleFont) => {
-    console.log('Selected font:', font);
+  // Handle font selection
+  const handleSelectFont = (font: GoogleFont) => {
+    console.log("Font selected:", font.family, font.category);
     
-    // Validate font data before using it
-    if (!font || !font.family) {
-      console.error('Invalid font data:', font);
-      return;
-    }
-    
-    // Ensure the category is one of the valid FontCategory values
-    let category = font.category || 'sans-serif';
+    // Ensure the category is a valid FontCategory
+    let category = font.category;
     if (!['serif', 'sans-serif', 'display', 'handwriting', 'monospace', 'other'].includes(category)) {
-      category = 'other'; // Fallback to 'other' for unknown categories
+      category = 'other';
     }
     
     setSelectedFont(font.family);
@@ -178,8 +173,8 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     form.setValue('isCustom', false);
     form.setValue('googleFont', font.family);
     
-    // Close the dropdown after selection
-    setCommandOpen(false);
+    // Close dropdown
+    setDropdownOpen(false);
   };
 
   // Handle Custom Font File Upload
@@ -235,7 +230,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     setSearchQuery('');
     setFontFile(null);
     setFontPreview(null);
-    setCommandOpen(false);
+    setDropdownOpen(false);
   };
 
   // Helper to determine font format from filename
@@ -307,70 +302,88 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
               <TabsContent value="google" className="space-y-4">
-                {/* Google Font Selector with Smart Suggestions */}
+                {/* Google Font Selector - Custom Implementation */}
                 <div className="space-y-4">
-                  <Popover open={commandOpen} onOpenChange={(open) => {
-                    console.log('Command menu state changing to:', open);
-                    setCommandOpen(open);
-                  }}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={commandOpen}
-                        className="w-full justify-between"
-                      >
-                        {selectedFont 
-                          ? `${selectedFont}`
-                          : "Search Google Fonts..."}
-                        {loadingFonts ? (
-                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0 max-h-[300px]" align="start">
-                      <Command>
-                        <CommandInput 
-                          placeholder="Search font..." 
-                          value={searchQuery}
-                          onValueChange={setSearchQuery}
-                        />
-                        <CommandEmpty>
-                          {loadingFonts ? 'Loading fonts...' : 'No font found.'}
-                        </CommandEmpty>
-                        <CommandList>
-                          <ScrollArea className="h-[250px]">
-                            <CommandGroup>
-                              {loadingFonts ? (
-                                <div className="flex items-center justify-center py-6">
-                                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <div className="relative" ref={dropdownRef}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setDropdownOpen(!dropdownOpen)}
+                      className="w-full justify-between h-10"
+                    >
+                      {selectedFont 
+                        ? `${selectedFont}`
+                        : "Search Google Fonts..."}
+                      {loadingFonts ? (
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      )}
+                    </Button>
+                    
+                    {dropdownOpen && (
+                      <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg">
+                        <div className="p-2 border-b flex items-center">
+                          <Search className="mr-2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Search font..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                          />
+                          {searchQuery && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-4 w-4 p-0"
+                              onClick={() => setSearchQuery('')}
+                            >
+                              <X className="h-4 w-4" />
+                              <span className="sr-only">Clear</span>
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <div 
+                          className="max-h-[250px] overflow-y-auto py-1" 
+                          style={{ scrollbarWidth: 'thin' }}
+                        >
+                          {loadingFonts ? (
+                            <div className="flex items-center justify-center py-6">
+                              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            </div>
+                          ) : filteredFonts.length === 0 ? (
+                            <div className="py-6 text-center text-muted-foreground">
+                              No font found.
+                            </div>
+                          ) : (
+                            filteredFonts.map((font) => (
+                              <button
+                                key={font.family}
+                                type="button"
+                                className={cn(
+                                  "w-full flex justify-between items-center px-3 py-2 text-sm hover:bg-muted",
+                                  selectedFont === font.family && "bg-muted"
+                                )}
+                                onClick={() => handleSelectFont(font)}
+                              >
+                                <span className="font-medium">{font.family}</span>
+                                <div className="flex items-center">
+                                  <span className="text-xs text-muted-foreground mr-2">
+                                    {font.category}
+                                  </span>
+                                  {selectedFont === font.family && (
+                                    <CheckIcon className="h-4 w-4" />
+                                  )}
                                 </div>
-                              ) : (
-                                filteredFonts.map((font) => (
-                                  <CommandItem
-                                    key={font.family}
-                                    value={font.family}
-                                    onSelect={() => handleSelectGoogleFont(font)}
-                                    className="flex justify-between items-center"
-                                  >
-                                    <span className="font-medium">{font.family}</span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {font.category}
-                                    </span>
-                                    {selectedFont === font.family && (
-                                      <CheckIcon className="ml-2 h-4 w-4" />
-                                    )}
-                                  </CommandItem>
-                                ))
-                              )}
-                            </CommandGroup>
-                          </ScrollArea>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {selectedFont && selectedFontData && (
                     <div className="p-4 border rounded-md bg-muted/50">
