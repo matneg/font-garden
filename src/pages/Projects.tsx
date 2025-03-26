@@ -5,6 +5,7 @@ import ProjectCard from '@/components/ui/ProjectCard';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { PlusCircle, FolderKanban } from 'lucide-react';
+import CreateProjectModal from '@/components/modals/CreateProjectModal';
 
 const Projects = () => {
   const { projects, loading } = useFontContext();
@@ -21,12 +22,12 @@ const Projects = () => {
             Manage your font collections
           </p>
         </div>
-        <Button asChild>
-          <Link to="/projects/add">
+        <CreateProjectModal>
+          <Button>
             <PlusCircle className="mr-2 h-5 w-5" /> 
             Add Project
-          </Link>
-        </Button>
+          </Button>
+        </CreateProjectModal>
       </div>
       
       {loading ? (
@@ -46,12 +47,12 @@ const Projects = () => {
           ) : (
             <div className="text-center py-12 bg-muted/30 rounded-lg">
               <p className="text-muted-foreground mb-4">You haven't created any projects yet</p>
-              <Button asChild>
-                <Link to="/projects/add">
+              <CreateProjectModal>
+                <Button>
                   <PlusCircle className="mr-2 h-5 w-5" /> 
                   Create your first project
-                </Link>
-              </Button>
+                </Button>
+              </CreateProjectModal>
             </div>
           )}
         </>
