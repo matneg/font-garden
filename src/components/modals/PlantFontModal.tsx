@@ -35,6 +35,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFontContext } from '@/context/FontContext';
 import { Sprout, Upload, FileText, ChevronsUpDown, Loader2, CheckIcon, X, Search } from 'lucide-react';
 import { FontCategory, FontFormat } from '@/types';
@@ -302,7 +303,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
               <TabsContent value="google" className="space-y-4">
-                {/* Google Font Selector - Custom Implementation */}
+                {/* Google Font Selector */}
                 <div className="space-y-4">
                   <div className="relative" ref={dropdownRef}>
                     <Button
@@ -345,42 +346,41 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                           )}
                         </div>
                         
-                        <div 
-                          className="max-h-[250px] overflow-y-auto py-1" 
-                          style={{ scrollbarWidth: 'thin' }}
-                        >
-                          {loadingFonts ? (
-                            <div className="flex items-center justify-center py-6">
-                              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                            </div>
-                          ) : filteredFonts.length === 0 ? (
-                            <div className="py-6 text-center text-muted-foreground">
-                              No font found.
-                            </div>
-                          ) : (
-                            filteredFonts.map((font) => (
-                              <button
-                                key={font.family}
-                                type="button"
-                                className={cn(
-                                  "w-full flex justify-between items-center px-3 py-2 text-sm hover:bg-muted",
-                                  selectedFont === font.family && "bg-muted"
-                                )}
-                                onClick={() => handleSelectFont(font)}
-                              >
-                                <span className="font-medium">{font.family}</span>
-                                <div className="flex items-center">
-                                  <span className="text-xs text-muted-foreground mr-2">
-                                    {font.category}
-                                  </span>
-                                  {selectedFont === font.family && (
-                                    <CheckIcon className="h-4 w-4" />
+                        <ScrollArea className="h-[250px]">
+                          <div className="py-1">
+                            {loadingFonts ? (
+                              <div className="flex items-center justify-center py-6">
+                                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                              </div>
+                            ) : filteredFonts.length === 0 ? (
+                              <div className="py-6 text-center text-muted-foreground">
+                                No font found.
+                              </div>
+                            ) : (
+                              filteredFonts.map((font) => (
+                                <button
+                                  key={font.family}
+                                  type="button"
+                                  className={cn(
+                                    "w-full flex justify-between items-center px-3 py-2 text-sm hover:bg-muted",
+                                    selectedFont === font.family && "bg-muted"
                                   )}
-                                </div>
-                              </button>
-                            ))
-                          )}
-                        </div>
+                                  onClick={() => handleSelectFont(font)}
+                                >
+                                  <span className="font-medium">{font.family}</span>
+                                  <div className="flex items-center">
+                                    <span className="text-xs text-muted-foreground mr-2">
+                                      {font.category}
+                                    </span>
+                                    {selectedFont === font.family && (
+                                      <CheckIcon className="h-4 w-4" />
+                                    )}
+                                  </div>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </ScrollArea>
                       </div>
                     )}
                   </div>
@@ -458,24 +458,24 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                       </p>
                     </div>
                   )}
-                </div>
 
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Font Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="My Custom Font" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Name extracted from file, you can edit it if needed
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Font Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="My Custom Font" {...field} />
+                        </FormControl>
+                        <FormDescription>
+                          Name extracted from file, you can edit it if needed
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </TabsContent>
               
               {/* Custom Tags Field (replaces the Category dropdown) */}

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Font, Project, FontCategory } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -138,6 +139,16 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addFont = async (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>) => {
     try {
+      // Get the current user
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('You must be logged in to add a font');
+        return;
+      }
+      
+      const userId = session.user.id;
+      
       const { data, error } = await supabase
         .from('fonts')
         .insert([{
@@ -148,7 +159,8 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           tags: font.tags,
           is_custom: font.isCustom,
           font_file_path: font.fontFilePath,
-          font_format: font.fontFormat
+          font_format: font.fontFormat,
+          user_id: userId // Add the user_id to satisfy RLS policy
         }])
         .select();
 
@@ -164,11 +176,22 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addProject = async (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'fontCount'>) => {
     try {
+      // Get the current user
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('You must be logged in to create a project');
+        return;
+      }
+      
+      const userId = session.user.id;
+      
       const { data, error } = await supabase
         .from('projects')
         .insert([{
           name: project.name,
-          description: project.description
+          description: project.description,
+          user_id: userId // Add the user_id to satisfy RLS policy
         }])
         .select();
 
