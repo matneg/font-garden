@@ -32,10 +32,21 @@ import {
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const FontDetails = () => {
   const { id } = useParams<{ id: string }>();
-  const { getFontById, projects } = useFontContext();
+  const { getFontById, projects, deleteFont } = useFontContext();
   const navigate = useNavigate();
   
   const font = getFontById(id || '');
@@ -73,6 +84,13 @@ const FontDetails = () => {
       </div>
     );
   }
+
+  const handleDeleteFont = async () => {
+    if (id) {
+      await deleteFont(id);
+      navigate('/fonts', { replace: true });
+    }
+  };
   
   const getFontPreviewStyle = () => {
     if (font.isCustom) {
@@ -130,10 +148,28 @@ const FontDetails = () => {
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </Button>
-            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-              <Trash className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                  <Trash className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete font</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete "{font.name}"? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteFont} className="bg-destructive text-destructive-foreground">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </div>
