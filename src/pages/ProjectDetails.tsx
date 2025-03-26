@@ -25,6 +25,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import AddFontToProjectModal from '@/components/modals/AddFontToProjectModal';
 
 const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -136,10 +137,12 @@ const ProjectDetails = () => {
             <BookOpen className="h-5 w-5" />
             <h2 className="text-xl font-semibold">Fonts in this project</h2>
           </div>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Font
-          </Button>
+          <AddFontToProjectModal projectId={project.id}>
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Font
+            </Button>
+          </AddFontToProjectModal>
         </div>
         <Separator className="mb-6" />
         
@@ -152,10 +155,12 @@ const ProjectDetails = () => {
         ) : (
           <div className="text-center py-12 bg-muted/30 rounded-lg">
             <p className="text-muted-foreground mb-4">No fonts have been added to this project yet</p>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add your first font
-            </Button>
+            <AddFontToProjectModal projectId={project.id}>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add your first font
+              </Button>
+            </AddFontToProjectModal>
           </div>
         )}
       </div>

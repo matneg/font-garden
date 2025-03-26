@@ -13,6 +13,7 @@ import FontArchive from "./pages/FontArchive";
 import FontDetails from "./pages/FontDetails";
 import Projects from "./pages/Projects";
 import ProjectDetails from "./pages/ProjectDetails";
+import AddProject from "./pages/AddProject";
 import NotFound from "./pages/NotFound";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
@@ -47,6 +48,7 @@ const App = () => (
                     <Route path="/fonts" element={<FontArchive />} />
                     <Route path="/fonts/:id" element={<FontDetails />} />
                     <Route path="/projects" element={<Projects />} />
+                    <Route path="/projects/add" element={<AddProject />} />
                     <Route path="/projects/:id" element={<ProjectDetails />} />
                     <Route path="*" element={<NotFound />} />
                   </Route>
