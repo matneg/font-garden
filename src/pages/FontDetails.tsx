@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFontContext } from '@/context/FontContext';
@@ -28,7 +27,8 @@ import {
   Edit,
   Trash,
   Link as LinkIcon,
-  FileText
+  FileText,
+  Tag
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,10 +56,8 @@ const FontDetails = () => {
     context: 'custom'
   });
   
-  // Find related projects (in a real app, this would be a database query)
   const relatedProjects = projects.slice(0, 2);
   
-  // Load Google Font dynamically for preview
   useEffect(() => {
     if (font && !font.isCustom && font.fontFamily) {
       const link = document.createElement('link');
@@ -94,7 +92,6 @@ const FontDetails = () => {
   
   const getFontPreviewStyle = () => {
     if (font.isCustom) {
-      // In a real app, we would use uploaded font files
       return {};
     } else {
       return { fontFamily: font.fontFamily || 'sans-serif' };
@@ -112,6 +109,11 @@ const FontDetails = () => {
       default:
         return 'text-4xl';
     }
+  };
+  
+  const getTagsArray = (tagsString?: string): string[] => {
+    if (!tagsString) return [];
+    return tagsString.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
   };
   
   return (
@@ -265,6 +267,26 @@ const FontDetails = () => {
               </Tabs>
             </CardContent>
           </Card>
+          
+          {font.tags && font.tags.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Tag className="mr-2 h-5 w-5" />
+                  Tags
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {getTagsArray(font.tags).map((tag, index) => (
+                    <Badge key={index} variant="outline" className="bg-muted/50">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           {font.notes && (
             <Card>
