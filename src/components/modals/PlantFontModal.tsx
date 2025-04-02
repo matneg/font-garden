@@ -66,6 +66,8 @@ interface PlantFontModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const GOOGLE_FONTS_API_KEY = import.meta.env.VITE_GOOGLE_FONTS_API_KEY || "AIzaSyAOES8EmKhuJEnsn9kS1XKBpxxp-TgN8Jc";
+
 const PlantFontModal: React.FC<PlantFontModalProps> = ({ 
   open, 
   onOpenChange 
@@ -96,7 +98,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     },
   });
 
-  // Handle clicks outside the dropdown to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -110,13 +111,12 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     };
   }, []);
 
-  // Fetch Google Fonts from the API
   useEffect(() => {
     const fetchGoogleFonts = async () => {
       setLoadingFonts(true);
       try {
         const response = await fetch(
-          'https://www.googleapis.com/webfonts/v1/webfonts?key=AIzaSyAOES8EmKhuJEnsn9kS1XKBpxxp-TgN8Jc&sort=popularity'
+          `https://www.googleapis.com/webfonts/v1/webfonts?key=${GOOGLE_FONTS_API_KEY}&sort=popularity`
         );
         
         if (!response.ok) {
@@ -149,16 +149,13 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     fetchGoogleFonts();
   }, []);
 
-  // Filter fonts based on search query
   const filteredFonts = googleFonts.filter(font => 
     font.family.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Handle font selection
   const handleSelectFont = (font: GoogleFont) => {
     console.log("Font selected:", font.family, font.category);
     
-    // Ensure the category is a valid FontCategory
     let category = font.category;
     if (!['serif', 'sans-serif', 'display', 'handwriting', 'monospace', 'other'].includes(category)) {
       category = 'other';
@@ -167,29 +164,24 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     setSelectedFont(font.family);
     setSelectedFontData(font);
     
-    // Update form values
     form.setValue('name', font.family);
     form.setValue('fontFamily', `${font.family}, ${category}`);
     form.setValue('category', category as FontCategory);
     form.setValue('isCustom', false);
     form.setValue('googleFont', font.family);
     
-    // Close dropdown
     setDropdownOpen(false);
   };
 
-  // Handle Custom Font File Upload
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
       const file = files[0];
       setFontFile(file);
       
-      // Preview uploaded font
       const fileUrl = URL.createObjectURL(file);
       setFontPreview(fileUrl);
       
-      // Try to extract name from filename (remove extension)
       const fontName = file.name.replace(/\.[^/.]+$/, "");
       form.setValue('name', fontName);
       form.setValue('fontFamily', fontName);
@@ -197,7 +189,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     }
   };
 
-  // Update form based on font source
   useEffect(() => {
     if (fontSource === 'google') {
       form.setValue('isCustom', false);
@@ -207,7 +198,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   }, [fontSource, form]);
 
   const onSubmit = async (values: PlantFontFormValues) => {
-    // Create a new font object and save to Supabase
     await addFont({
       name: values.name,
       fontFamily: values.fontFamily,
@@ -219,7 +209,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
       fontFormat: fontFile ? determineFileFormat(fontFile.name) : null,
     });
     
-    // Close the modal and reset the form
     resetForm();
     onOpenChange(false);
   };
@@ -234,7 +223,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     setDropdownOpen(false);
   };
 
-  // Helper to determine font format from filename
   const determineFileFormat = (filename: string): FontFormat | null => {
     const extension = filename.split('.').pop()?.toLowerCase();
     switch (extension) {
@@ -248,7 +236,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     }
   };
 
-  // Fallback list of Google Fonts if API fails
   const FALLBACK_GOOGLE_FONTS = [
     { name: 'Roboto', category: 'sans-serif' },
     { name: 'Open Sans', category: 'sans-serif' },
@@ -303,7 +290,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
               <TabsContent value="google" className="space-y-4">
-                {/* Google Font Selector */}
                 <div className="space-y-4">
                   <div className="relative" ref={dropdownRef}>
                     <Button
@@ -394,7 +380,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                             {selectedFontData.category}
                           </span>
                         </div>
-                        {/* Load the font using React-safe approach */}
                         <link 
                           href={`https://fonts.googleapis.com/css2?family=${selectedFont.replace(/\s+/g, '+')}:wght@400;700&display=swap`} 
                           rel="stylesheet" 
@@ -414,7 +399,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
               </TabsContent>
               
               <TabsContent value="custom" className="space-y-4">
-                {/* Custom Font Upload */}
                 <div className="space-y-4">
                   <div 
                     className="border-2 border-dashed rounded-md p-6 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
@@ -478,7 +462,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                 </div>
               </TabsContent>
               
-              {/* Custom Tags Field (replaces the Category dropdown) */}
               <FormField
                 control={form.control}
                 name="tags"
