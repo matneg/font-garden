@@ -68,12 +68,22 @@ type ExternalReferenceFormValues = z.infer<typeof externalReferenceSchema>;
 
 interface CreateProjectModalProps {
   children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ children }) => {
-  const [open, setOpen] = useState(false);
+const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ 
+  children, 
+  open: externalOpen, 
+  onOpenChange: externalOnOpenChange 
+}) => {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("personal");
   const { addProject } = useFontContext();
+  
+  // Use external state if provided, otherwise use internal state
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = externalOnOpenChange || setInternalOpen;
 
   // Form for personal project
   const personalForm = useForm<PersonalProjectFormValues>({
