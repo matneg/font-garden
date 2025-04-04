@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Font, Project, FontCategory, ProjectType, FontFormat } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,7 +87,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: project.id,
         name: project.name,
         description: project.description || '',
-        type: project.type as ProjectType || 'personal',
+        type: (project.type as ProjectType) || 'personal',
         createdAt: project.created_at,
         updatedAt: project.updated_at,
         fontCount: project.font_projects ? project.font_projects.length : 0
