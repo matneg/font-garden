@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -7,6 +6,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { useFontContext } from '@/context/FontContext';
 import { supabase } from '@/integrations/supabase/client';
+import { ProjectType } from '@/types';
 
 import {
   Dialog,
@@ -143,6 +143,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       await addProject({
         name: values.name,
         description: description.trim(),
+        type: 'personal' as ProjectType,
       });
       
       toast.success("Project created successfully!");
@@ -184,6 +185,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       await addProject({
         name: values.name,
         description: description.trim(),
+        type: 'reference' as ProjectType,
       });
       
       // Get the current user session
@@ -316,7 +318,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                     name="year"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Year *</FormLabel>
+                        <FormLabel>Year</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 

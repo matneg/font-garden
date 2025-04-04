@@ -41,7 +41,7 @@ const ProjectsSearchBar: React.FC = () => {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="flex items-center gap-2">
               <Filter className="h-4 w-4" />
-              <span>Filter</span>
+              <span>Filter: {projectTypeFilter === 'all' ? 'All' : projectTypeFilter}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

@@ -202,7 +202,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .insert({
           name: project.name,
           description: project.description,
-          type: project.type || 'personal',
+          type: project.type || 'personal', // Ensure type is properly set
           user_id: userId
         })
         .select();
