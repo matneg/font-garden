@@ -78,10 +78,12 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('projects')
-        .select('*, font_projects(font_id)')
+        .select('*, font_projects(font_id), type')
         .order('name');
 
       if (error) throw error;
+
+      console.log('Fetched projects:', data);
 
       const transformedProjects: Project[] = data.map(project => ({
         id: project.id,
