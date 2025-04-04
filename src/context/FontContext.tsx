@@ -86,6 +86,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: project.id,
         name: project.name,
         description: project.description || '',
+        type: project.type as ProjectType || 'personal',
         createdAt: project.created_at,
         updatedAt: project.updated_at,
         fontCount: project.font_projects ? project.font_projects.length : 0
@@ -195,11 +196,12 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { data, error } = await supabase
         .from('projects')
-        .insert([{
+        .insert({
           name: project.name,
           description: project.description,
+          type: project.type || 'personal',
           user_id: userId
-        }])
+        })
         .select();
 
       if (error) throw error;

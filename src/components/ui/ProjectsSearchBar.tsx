@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Search, Filter, ArrowUp, ArrowDown, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { ProjectType } from '@/types';
 import { useFontContext } from '@/context/FontContext';
 
@@ -23,45 +22,6 @@ const ProjectsSearchBar: React.FC = () => {
     projectSortOrder,
     setProjectSortOrder
   } = useFontContext();
-
-  const getSortButtonLabel = () => {
-    switch (projectSortOrder) {
-      case 'newest':
-        return (
-          <>
-            <Calendar className="h-4 w-4 mr-1" />
-            <ArrowDown className="h-4 w-4" />
-            <span className="sr-only md:not-sr-only md:ml-2">Newest</span>
-          </>
-        );
-      case 'oldest':
-        return (
-          <>
-            <Calendar className="h-4 w-4 mr-1" />
-            <ArrowUp className="h-4 w-4" />
-            <span className="sr-only md:not-sr-only md:ml-2">Oldest</span>
-          </>
-        );
-      case 'name-asc':
-        return (
-          <>
-            <span className="mr-1">A</span>
-            <ArrowUp className="h-4 w-4" />
-            <span className="sr-only md:not-sr-only md:ml-2">A-Z</span>
-          </>
-        );
-      case 'name-desc':
-        return (
-          <>
-            <span className="mr-1">Z</span>
-            <ArrowDown className="h-4 w-4" />
-            <span className="sr-only md:not-sr-only md:ml-2">Z-A</span>
-          </>
-        );
-      default:
-        return 'Sort';
-    }
-  };
 
   return (
     <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -76,22 +36,36 @@ const ProjectsSearchBar: React.FC = () => {
       </div>
       
       <div className="flex gap-2">
-        <ToggleGroup 
-          type="single" 
-          value={projectTypeFilter} 
-          onValueChange={(value) => {
-            if (value) setProjectTypeFilter(value as ProjectType | 'all');
-          }}
-        >
-          <ToggleGroupItem value="all">All</ToggleGroupItem>
-          <ToggleGroupItem value="personal">Personal</ToggleGroupItem>
-          <ToggleGroupItem value="reference">References</ToggleGroupItem>
-        </ToggleGroup>
-        
+        {/* Filter Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="flex items-center justify-center px-3">
-              {getSortButtonLabel()}
+            <Button variant="outline" className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <span>Filter</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuRadioGroup 
+              value={projectTypeFilter} 
+              onValueChange={(value) => setProjectTypeFilter(value as ProjectType | 'all')}
+            >
+              <DropdownMenuRadioItem value="all">All</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="personal">Personal</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="reference">References</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        {/* Sort Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              {projectSortOrder === 'newest' && <ArrowDown className="h-4 w-4" />}
+              {projectSortOrder === 'oldest' && <ArrowUp className="h-4 w-4" />}
+              {projectSortOrder === 'name-asc' && <ArrowUp className="h-4 w-4" />}
+              {projectSortOrder === 'name-desc' && <ArrowDown className="h-4 w-4" />}
+              <span>{getSortLabel(projectSortOrder)}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -110,5 +84,21 @@ const ProjectsSearchBar: React.FC = () => {
     </div>
   );
 };
+
+// Helper function to get the sort label
+function getSortLabel(sortOrder: string): string {
+  switch (sortOrder) {
+    case 'newest':
+      return 'Newest';
+    case 'oldest':
+      return 'Oldest';
+    case 'name-asc':
+      return 'A-Z';
+    case 'name-desc':
+      return 'Z-A';
+    default:
+      return 'Sort';
+  }
+}
 
 export default ProjectsSearchBar;

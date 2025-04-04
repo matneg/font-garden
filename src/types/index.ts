@@ -31,7 +31,7 @@ export interface Project {
   id: string;
   name: string;
   description: string;
-  type?: ProjectType;
+  type?: ProjectType;  // Made sure this is explicitly defined
   createdAt: string;
   updatedAt: string;
   fontCount: number;
