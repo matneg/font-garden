@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Font, Project, FontCategory } from '@/types';
+import { Font, Project, FontCategory, ProjectType } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -10,9 +9,15 @@ interface FontContextType {
   loading: boolean;
   error: string | null;
   searchQuery: string;
+  projectSearchQuery: string;
   categoryFilter: FontCategory | 'all';
+  projectTypeFilter: ProjectType | 'all';
+  projectSortOrder: 'newest' | 'oldest' | 'name-asc' | 'name-desc';
   setSearchQuery: (query: string) => void;
+  setProjectSearchQuery: (query: string) => void;
   setCategoryFilter: (category: FontCategory | 'all') => void;
+  setProjectTypeFilter: (type: ProjectType | 'all') => void;
+  setProjectSortOrder: (order: 'newest' | 'oldest' | 'name-asc' | 'name-desc') => void;
   getFontById: (id: string) => Font | undefined;
   getProjectById: (id: string) => Project | undefined;
   addFont: (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>) => Promise<void>;
@@ -21,6 +26,7 @@ interface FontContextType {
   removeFontFromProject: (fontId: string, projectId: string) => Promise<void>;
   deleteFont: (id: string) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
+  filteredProjects: Project[];
 }
 
 const FontContext = createContext<FontContextType | undefined>(undefined);
@@ -31,7 +37,10 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [projectSearchQuery, setProjectSearchQuery] = useState<string>('');
   const [categoryFilter, setCategoryFilter] = useState<FontCategory | 'all'>('all');
+  const [projectTypeFilter, setProjectTypeFilter] = useState<ProjectType | 'all'>('all');
+  const [projectSortOrder, setProjectSortOrder] = useState<'newest' | 'oldest' | 'name-asc' | 'name-desc'>('newest');
 
   const fetchFonts = async () => {
     try {
@@ -139,7 +148,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addFont = async (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>) => {
     try {
-      // Get the current user
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -160,7 +168,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           is_custom: font.isCustom,
           font_file_path: font.fontFilePath,
           font_format: font.fontFormat,
-          user_id: userId // Add the user_id to satisfy RLS policy
+          user_id: userId
         }])
         .select();
 
@@ -176,7 +184,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addProject = async (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'fontCount'>) => {
     try {
-      // Get the current user
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -191,7 +198,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .insert([{
           name: project.name,
           description: project.description,
-          user_id: userId // Add the user_id to satisfy RLS policy
+          user_id: userId
         }])
         .select();
 
@@ -275,6 +282,41 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const filteredProjects = React.useMemo(() => {
+    return projects
+      .filter(project => {
+        if (projectSearchQuery) {
+          const searchTermLower = projectSearchQuery.toLowerCase();
+          const matchesName = project.name.toLowerCase().includes(searchTermLower);
+          const matchesDescription = project.description?.toLowerCase().includes(searchTermLower) || false;
+          
+          if (!matchesName && !matchesDescription) {
+            return false;
+          }
+        }
+        
+        if (projectTypeFilter !== 'all') {
+          return project.type === projectTypeFilter;
+        }
+        
+        return true;
+      })
+      .sort((a, b) => {
+        switch (projectSortOrder) {
+          case 'newest':
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          case 'oldest':
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          case 'name-asc':
+            return a.name.localeCompare(b.name);
+          case 'name-desc':
+            return b.name.localeCompare(a.name);
+          default:
+            return 0;
+        }
+      });
+  }, [projects, projectSearchQuery, projectTypeFilter, projectSortOrder]);
+
   return (
     <FontContext.Provider
       value={{
@@ -283,9 +325,15 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         error,
         searchQuery,
+        projectSearchQuery,
         categoryFilter,
+        projectTypeFilter,
+        projectSortOrder,
         setSearchQuery,
+        setProjectSearchQuery,
         setCategoryFilter,
+        setProjectTypeFilter,
+        setProjectSortOrder,
         getFontById,
         getProjectById,
         addFont,
@@ -293,7 +341,8 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addFontToProject,
         removeFontFromProject,
         deleteFont,
-        deleteProject
+        deleteProject,
+        filteredProjects
       }}
     >
       {children}

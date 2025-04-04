@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { PlusCircle, FolderKanban } from 'lucide-react';
 import CreateProjectModal from '@/components/modals/CreateProjectModal';
+import ProjectsSearchBar from '@/components/ui/ProjectsSearchBar';
 
 const Projects = () => {
-  const { projects, loading } = useFontContext();
+  const { filteredProjects, loading } = useFontContext();
   
   return (
     <div className="container mx-auto px-4 py-8 page-transition">
@@ -30,6 +31,8 @@ const Projects = () => {
         </CreateProjectModal>
       </div>
       
+      <ProjectsSearchBar />
+      
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -38,19 +41,19 @@ const Projects = () => {
         </div>
       ) : (
         <>
-          {projects.length > 0 ? (
+          {filteredProjects.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {projects.map((project) => (
+              {filteredProjects.map((project) => (
                 <ProjectCard key={project.id} project={project} />
               ))}
             </div>
           ) : (
             <div className="text-center py-12 bg-muted/30 rounded-lg">
-              <p className="text-muted-foreground mb-4">You haven't created any projects yet</p>
+              <p className="text-muted-foreground mb-4">No projects found with your current filters</p>
               <CreateProjectModal>
                 <Button>
                   <PlusCircle className="mr-2 h-5 w-5" /> 
-                  Create your first project
+                  Create a new project
                 </Button>
               </CreateProjectModal>
             </div>
