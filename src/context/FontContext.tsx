@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Font, Project, FontCategory, ProjectType } from '@/types';
+import { Font, Project, FontCategory, ProjectType, FontFormat } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -55,12 +55,12 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: font.id,
         name: font.name,
         fontFamily: font.font_family,
-        category: font.category,
+        category: font.category as FontCategory,
         notes: font.notes || '',
         tags: font.tags || '',
         isCustom: font.is_custom,
         fontFilePath: font.font_file_path || null,
-        fontFormat: font.font_format || null,
+        fontFormat: font.font_format as FontFormat || null,
         createdAt: font.created_at,
         updatedAt: font.updated_at,
         projectCount: font.font_projects ? font.font_projects.length : 0
@@ -159,7 +159,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const { data, error } = await supabase
         .from('fonts')
-        .insert([{
+        .insert({
           name: font.name,
           font_family: font.fontFamily,
           category: font.category,
@@ -169,7 +169,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           font_file_path: font.fontFilePath,
           font_format: font.fontFormat,
           user_id: userId
-        }])
+        })
         .select();
 
       if (error) throw error;

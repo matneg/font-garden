@@ -1,4 +1,14 @@
-export type FontCategory = 'serif' | 'sans-serif' | 'display' | 'handwriting' | 'monospace';
+
+export type FontCategory = 'serif' | 'sans-serif' | 'display' | 'handwriting' | 'monospace' | 'other';
+
+export type FontFormat = 'woff' | 'woff2' | 'truetype' | 'opentype' | 'svg' | 'embedded-opentype';
+
+export type PreviewContext = 'custom' | 'heading' | 'subheading' | 'paragraph';
+
+export interface FontPreviewOptions {
+  text: string;
+  context: PreviewContext;
+}
 
 export type ProjectType = 'personal' | 'reference';
 
@@ -11,7 +21,7 @@ export interface Font {
   tags: string;
   isCustom: boolean;
   fontFilePath: string | null;
-  fontFormat: string | null;
+  fontFormat: FontFormat | null;
   createdAt: string;
   updatedAt: string;
   projectCount: number;
