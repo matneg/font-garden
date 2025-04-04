@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -30,22 +31,23 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { User, ExternalLink, Plus, Image, Upload, CalendarIcon } from 'lucide-react';
+import { User, ExternalLink, Plus, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Schema for personal project
 const personalProjectSchema = z.object({
   name: z.string().min(1, { message: "Project name is required" }),
-  month: z.date().optional(),
-  year: z.number().min(1900).max(2100).optional(),
+  month: z.string().optional(),
+  year: z.string().optional(),
   duration: z.string().optional(),
   field: z.string().min(1, { message: "Field is required" }),
   coAuthors: z.string().optional(),
@@ -55,8 +57,8 @@ const personalProjectSchema = z.object({
 // Schema for external reference
 const externalReferenceSchema = z.object({
   name: z.string().min(1, { message: "Reference name is required" }),
-  month: z.date().optional(),
-  year: z.number().min(1900).max(2100).optional(),
+  month: z.string().optional(),
+  year: z.string().optional(),
   duration: z.string().optional(),
   field: z.string().min(1, { message: "Field is required" }),
   authors: z.string().optional(),
@@ -85,11 +87,22 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = externalOnOpenChange || setInternalOpen;
 
+  // Generate arrays for month and year selection
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+  
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 101 }, (_, i) => (currentYear - 50 + i).toString());
+  
   // Form for personal project
   const personalForm = useForm<PersonalProjectFormValues>({
     resolver: zodResolver(personalProjectSchema),
     defaultValues: {
       name: "",
+      month: "",
+      year: "",
       duration: "",
       field: "",
       coAuthors: "",
@@ -102,6 +115,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     resolver: zodResolver(externalReferenceSchema),
     defaultValues: {
       name: "",
+      month: "",
+      year: "",
       duration: "",
       field: "",
       authors: "",
@@ -118,14 +133,15 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         description += `Field: ${values.field}\n`;
       }
       
-      if (values.month) {
-        description += `Date: ${format(values.month, 'MMMM')}`;
+      if (values.month || values.year) {
+        description += `Date: `;
+        if (values.month) {
+          description += `${values.month}`;
+        }
         if (values.year) {
-          description += ` ${values.year}`;
+          description += values.month ? ` ${values.year}` : values.year;
         }
         description += "\n";
-      } else if (values.year) {
-        description += `Year: ${values.year}\n`;
       }
       
       if (values.duration) {
@@ -164,14 +180,15 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         description += `Field: ${values.field}\n`;
       }
       
-      if (values.month) {
-        description += `Date: ${format(values.month, 'MMMM')}`;
+      if (values.month || values.year) {
+        description += `Date: `;
+        if (values.month) {
+          description += `${values.month}`;
+        }
         if (values.year) {
-          description += ` ${values.year}`;
+          description += values.month ? ` ${values.year}` : values.year;
         }
         description += "\n";
-      } else if (values.year) {
-        description += `Year: ${values.year}\n`;
       }
       
       if (values.duration) {
@@ -277,37 +294,26 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                     control={personalForm.control}
                     name="month"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
+                      <FormItem>
                         <FormLabel>Month</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "MMMM")
-                                ) : (
-                                  <span>Pick a month</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pick a month" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {months.map((month) => (
+                              <SelectItem key={month} value={month}>
+                                {month}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -319,14 +325,24 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Year</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="2023" 
-                            {...field} 
-                            onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)} 
-                          />
-                        </FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select year" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {years.map((year) => (
+                              <SelectItem key={year} value={year}>
+                                {year}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -427,37 +443,26 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                     control={externalForm.control}
                     name="month"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
+                      <FormItem>
                         <FormLabel>Month</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "MMMM")
-                                ) : (
-                                  <span>Pick a month</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pick a month" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {months.map((month) => (
+                              <SelectItem key={month} value={month}>
+                                {month}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -469,14 +474,24 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Year</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="2023" 
-                            {...field} 
-                            onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)} 
-                          />
-                        </FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select year" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {years.map((year) => (
+                              <SelectItem key={year} value={year}>
+                                {year}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
