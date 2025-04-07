@@ -10,6 +10,20 @@ interface GardenItemProps {
 }
 
 const GardenItem: React.FC<GardenItemProps> = ({ font, index }) => {
+  // Load Google Fonts dynamically
+  React.useEffect(() => {
+    if (!font.isCustom && font.fontFamily) {
+      const link = document.createElement('link');
+      link.href = `https://fonts.googleapis.com/css2?family=${font.fontFamily.replace(' ', '+')}&display=swap`;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+      
+      return () => {
+        document.head.removeChild(link);
+      };
+    }
+  }, [font]);
+  
   const isFlower = (font.projectCount && font.projectCount > 0) || false;
   
   // Determine flower/bud color based on font category
@@ -25,6 +39,11 @@ const GardenItem: React.FC<GardenItemProps> = ({ font, index }) => {
   };
   
   const colorClass = getColorByCategory(font.category);
+  
+  // Define font style
+  const fontStyle = !font.isCustom 
+    ? { fontFamily: font.fontFamily || 'sans-serif' } 
+    : {};
   
   // Staggered animation delay based on index
   const delay = index * 0.1;
@@ -59,7 +78,7 @@ const GardenItem: React.FC<GardenItemProps> = ({ font, index }) => {
         `}>
           <span 
             className="text-xs font-medium truncate max-w-[80%] text-center"
-            style={!font.isCustom ? { fontFamily: font.fontFamily || 'sans-serif' } : {}}
+            style={fontStyle}
           >
             {font.name.substring(0, 10)}
             {font.name.length > 10 ? '...' : ''}
@@ -69,7 +88,7 @@ const GardenItem: React.FC<GardenItemProps> = ({ font, index }) => {
         {/* Flower details */}
         {isFlower && (
           <div className="mt-2 text-xs text-center text-muted-foreground">
-            <p className="font-medium">{font.name}</p>
+            <p className="font-medium" style={fontStyle}>{font.name}</p>
             <p>{font.projectCount} {font.projectCount === 1 ? 'project' : 'projects'}</p>
           </div>
         )}
@@ -77,7 +96,7 @@ const GardenItem: React.FC<GardenItemProps> = ({ font, index }) => {
         {/* Bud details */}
         {!isFlower && (
           <div className="mt-2 text-xs text-center text-muted-foreground">
-            <p className="font-medium">{font.name}</p>
+            <p className="font-medium" style={fontStyle}>{font.name}</p>
             <p>Unused</p>
           </div>
         )}

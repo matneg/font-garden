@@ -24,6 +24,7 @@ const FontCard: React.FC<FontCardProps> = ({ font }) => {
     }
   }, [font]);
 
+  // Define font style for both card title and preview area
   const fontStyle = font.isCustom 
     ? {} 
     : { fontFamily: font.fontFamily || 'sans-serif' };
@@ -33,7 +34,12 @@ const FontCard: React.FC<FontCardProps> = ({ font }) => {
       <Card className="h-full overflow-hidden card-hover">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg">{font.name}</CardTitle>
+            <CardTitle 
+              className="text-lg" 
+              style={fontStyle} // Apply font style to the title
+            >
+              {font.name}
+            </CardTitle>
             <Badge variant={font.isCustom ? "outline" : "secondary"}>
               {font.isCustom ? 'Custom' : 'Google Font'}
             </Badge>
