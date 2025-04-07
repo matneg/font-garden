@@ -61,7 +61,7 @@ const FontDetails = () => {
   useEffect(() => {
     if (font && !font.isCustom && font.fontFamily) {
       const link = document.createElement('link');
-      link.href = `https://fonts.googleapis.com/css2?family=${font.fontFamily.replace(' ', '+')}&display=swap`;
+      link.href = `https://fonts.googleapis.com/css2?family=${font.fontFamily.replace(/\s+/g, '+')}&display=swap`;
       link.rel = 'stylesheet';
       document.head.appendChild(link);
       
@@ -91,10 +91,10 @@ const FontDetails = () => {
   };
   
   const getFontPreviewStyle = () => {
-    if (font.isCustom) {
+    if (!font || font.isCustom) {
       return {};
     } else {
-      return { fontFamily: font.fontFamily || 'sans-serif' };
+      return { fontFamily: `"${font.fontFamily}", ${font.category}` };
     }
   };
   
@@ -131,7 +131,7 @@ const FontDetails = () => {
         
         <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
-            <h1 className="text-3xl font-bold">{font.name}</h1>
+            <h1 className="text-3xl font-bold" style={getFontPreviewStyle()}>{font.name}</h1>
             <div className="flex flex-wrap gap-2 mt-2">
               <Badge>{font.category}</Badge>
               <Badge variant={font.isCustom ? "outline" : "secondary"}>
@@ -308,7 +308,7 @@ const FontDetails = () => {
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">Font Name</p>
-                <p className="font-medium">{font.name}</p>
+                <p className="font-medium" style={getFontPreviewStyle()}>{font.name}</p>
               </div>
               
               {font.fontFamily && (
