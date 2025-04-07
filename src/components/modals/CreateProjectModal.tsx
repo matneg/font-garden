@@ -306,7 +306,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {months.map((month) => (
                               <SelectItem key={month} value={month}>
                                 {month}
@@ -335,7 +335,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {years.map((year) => (
                               <SelectItem key={year} value={year}>
                                 {year}
@@ -455,7 +455,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {months.map((month) => (
                               <SelectItem key={month} value={month}>
                                 {month}
@@ -484,7 +484,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {years.map((year) => (
                               <SelectItem key={year} value={year}>
                                 {year}
