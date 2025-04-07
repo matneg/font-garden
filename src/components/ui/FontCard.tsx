@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +13,7 @@ const FontCard: React.FC<FontCardProps> = ({ font }) => {
   React.useEffect(() => {
     if (!font.isCustom && font.fontFamily) {
       const link = document.createElement('link');
-      link.href = `https://fonts.googleapis.com/css2?family=${font.fontFamily.replace(' ', '+')}&display=swap`;
+      link.href = `https://fonts.googleapis.com/css2?family=${font.fontFamily.replace(/\s+/g, '+')}&display=swap`;
       link.rel = 'stylesheet';
       document.head.appendChild(link);
       
@@ -25,20 +24,17 @@ const FontCard: React.FC<FontCardProps> = ({ font }) => {
   }, [font]);
 
   // Define font style for both card title and preview area
-  const fontStyle = font.isCustom 
-    ? {} 
-    : { fontFamily: font.fontFamily || 'sans-serif' };
+  const fontStyle = !font.isCustom && font.fontFamily 
+    ? { fontFamily: `"${font.fontFamily}", ${font.category}` } 
+    : {};
 
   return (
     <Link to={`/fonts/${font.id}`}>
       <Card className="h-full overflow-hidden card-hover">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle 
-              className="text-lg" 
-              style={fontStyle} // Apply font style to the title
-            >
-              {font.name}
+            <CardTitle className="text-lg">
+              <span style={fontStyle}>{font.name}</span>
             </CardTitle>
             <Badge variant={font.isCustom ? "outline" : "secondary"}>
               {font.isCustom ? 'Custom' : 'Google Font'}
@@ -48,7 +44,6 @@ const FontCard: React.FC<FontCardProps> = ({ font }) => {
         <CardContent>
           <div 
             className="h-24 flex items-center justify-center bg-muted/30 rounded-md overflow-hidden mb-4"
-            style={fontStyle}
           >
             <p className="text-2xl truncate w-full text-center px-2" style={fontStyle}>
               {font.name}
