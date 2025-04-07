@@ -50,7 +50,7 @@ const FontCard: React.FC<FontCardProps> = ({ font }) => {
             className="h-24 flex items-center justify-center bg-muted/30 rounded-md overflow-hidden mb-4"
             style={fontStyle}
           >
-            <p className="text-2xl truncate w-full text-center px-2">
+            <p className="text-2xl truncate w-full text-center px-2" style={fontStyle}>
               {font.name}
             </p>
           </div>
