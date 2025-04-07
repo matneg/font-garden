@@ -3,9 +3,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
   DialogTitle,
   DialogDescription,
   DialogFooter,
@@ -37,9 +37,11 @@ import {
 } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFontContext } from '@/context/FontContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Sprout, Upload, FileText, ChevronsUpDown, Loader2, CheckIcon, X, Search } from 'lucide-react';
 import { FontCategory, FontFormat } from '@/types';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 // Define interface for Google Font data
 interface GoogleFont {
@@ -80,6 +82,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   const [fontFile, setFontFile] = useState<File | null>(null);
   const [fontPreview, setFontPreview] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [googleFonts, setGoogleFonts] = useState<GoogleFont[]>([]);
@@ -165,7 +168,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     setSelectedFontData(font);
     
     form.setValue('name', font.family);
-    form.setValue('fontFamily', `${font.family}, ${category}`);
+    form.setValue('fontFamily', font.family);
     form.setValue('category', category as FontCategory);
     form.setValue('isCustom', false);
     form.setValue('googleFont', font.family);
@@ -198,19 +201,64 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
   }, [fontSource, form]);
 
   const onSubmit = async (values: PlantFontFormValues) => {
-    await addFont({
-      name: values.name,
-      fontFamily: values.fontFamily,
-      category: values.category as FontCategory,
-      notes: values.notes || '',
-      tags: values.tags || '',
-      isCustom: values.isCustom,
-      fontFilePath: fontFile ? URL.createObjectURL(fontFile) : null,
-      fontFormat: fontFile ? determineFileFormat(fontFile.name) : null,
-    });
-    
-    resetForm();
-    onOpenChange(false);
+    try {
+      setUploadLoading(true);
+      
+      // For custom fonts, upload to Supabase storage first
+      let fontFilePath = null;
+      
+      if (values.isCustom && fontFile) {
+        // Check if user is authenticated (needed for storage access)
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast.error('You must be logged in to upload custom fonts');
+          setUploadLoading(false);
+          return;
+        }
+        
+        // Create a unique file name to prevent collisions
+        const timestamp = new Date().getTime();
+        const fileName = `${timestamp}_${fontFile.name.replace(/\s+/g, '_')}`;
+        
+        // Upload to Supabase storage in the 'fonts' bucket
+        const { data, error } = await supabase.storage
+          .from('fonts')
+          .upload(fileName, fontFile);
+        
+        if (error) {
+          console.error('Font upload error:', error);
+          throw new Error(`Error uploading font: ${error.message}`);
+        }
+        
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('fonts')
+          .getPublicUrl(fileName);
+        
+        fontFilePath = urlData.publicUrl;
+      }
+      
+      await addFont({
+        name: values.name,
+        fontFamily: values.fontFamily,
+        category: values.category as FontCategory,
+        notes: values.notes || '',
+        tags: values.tags || '',
+        isCustom: values.isCustom,
+        fontFilePath: fontFilePath,
+        fontFormat: fontFile ? determineFileFormat(fontFile.name) : null,
+      });
+      
+      toast.success('Font planted successfully!');
+      resetForm();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error adding font:', error);
+      toast.error('Failed to plant font');
+    } finally {
+      setUploadLoading(false);
+    }
   };
 
   const resetForm = () => {
@@ -459,6 +507,35 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                       </FormItem>
                     )}
                   />
+                  
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="serif">Serif</SelectItem>
+                            <SelectItem value="sans-serif">Sans-serif</SelectItem>
+                            <SelectItem value="display">Display</SelectItem>
+                            <SelectItem value="handwriting">Handwriting</SelectItem>
+                            <SelectItem value="monospace">Monospace</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </TabsContent>
               
@@ -504,16 +581,28 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
                   type="button" 
                   variant="outline" 
                   onClick={() => onOpenChange(false)}
+                  disabled={uploadLoading}
                 >
                   Cancel
                 </Button>
                 <Button 
                   type="submit" 
                   className="gap-2"
-                  disabled={fontSource === 'google' && !selectedFont || fontSource === 'custom' && !fontFile}
+                  disabled={(fontSource === 'google' && !selectedFont) || 
+                           (fontSource === 'custom' && !fontFile) ||
+                           uploadLoading}
                 >
-                  <Sprout className="h-4 w-4" />
-                  Plant Font
+                  {uploadLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Planting...
+                    </>
+                  ) : (
+                    <>
+                      <Sprout className="h-4 w-4" />
+                      Plant Font
+                    </>
+                  )}
                 </Button>
               </DialogFooter>
             </form>
