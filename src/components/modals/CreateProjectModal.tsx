@@ -40,8 +40,22 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { User, ExternalLink, Plus, Calendar } from 'lucide-react';
+import { User, ExternalLink, Plus, Calendar, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Schema for personal project
 const personalProjectSchema = z.object({
@@ -244,6 +258,99 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     }
   };
 
+  // Custom Combobox component for month and year selections
+  const ComboboxFormField = ({ 
+    form, 
+    name, 
+    label, 
+    options, 
+    placeholder 
+  }: { 
+    form: any, 
+    name: string, 
+    label: string, 
+    options: string[], 
+    placeholder: string 
+  }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+      <FormField
+        control={form.control}
+        name={name}
+        render={({ field }) => (
+          <FormItem className="flex flex-col">
+            <FormLabel>{label}</FormLabel>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <FormControl>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className={cn(
+                      "w-full justify-between h-10 text-left font-normal",
+                      !field.value && "text-muted-foreground"
+                    )}
+                  >
+                    {field.value || placeholder}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </FormControl>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <CommandInput placeholder={`Search ${label.toLowerCase()}...`} />
+                  <CommandEmpty>No {label.toLowerCase()} found.</CommandEmpty>
+                  <CommandList>
+                    <ScrollArea className="h-[200px]">
+                      <CommandGroup>
+                        <CommandItem
+                          value=""
+                          onSelect={() => {
+                            form.setValue(name, "");
+                            setOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              !field.value ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          Clear selection
+                        </CommandItem>
+                        {options.map((option) => (
+                          <CommandItem
+                            key={option}
+                            value={option}
+                            onSelect={() => {
+                              form.setValue(name, option, { shouldValidate: true });
+                              setOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                field.value === option ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {option}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </ScrollArea>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -290,62 +397,20 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 />
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={personalForm.control}
+                  <ComboboxFormField
+                    form={personalForm}
                     name="month"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Month</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pick a month" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {months.map((month) => (
-                              <SelectItem key={month} value={month}>
-                                {month}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    label="Month"
+                    options={months}
+                    placeholder="Select month"
                   />
                   
-                  <FormField
-                    control={personalForm.control}
+                  <ComboboxFormField
+                    form={personalForm}
                     name="year"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Year</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select year" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {years.map((year) => (
-                              <SelectItem key={year} value={year}>
-                                {year}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    label="Year"
+                    options={years}
+                    placeholder="Select year"
                   />
                 </div>
                 
@@ -439,62 +504,20 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 />
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={externalForm.control}
+                  <ComboboxFormField
+                    form={externalForm}
                     name="month"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Month</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Pick a month" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {months.map((month) => (
-                              <SelectItem key={month} value={month}>
-                                {month}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    label="Month"
+                    options={months}
+                    placeholder="Select month"
                   />
                   
-                  <FormField
-                    control={externalForm.control}
+                  <ComboboxFormField
+                    form={externalForm}
                     name="year"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Year</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select year" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            {years.map((year) => (
-                              <SelectItem key={year} value={year}>
-                                {year}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    label="Year"
+                    options={years}
+                    placeholder="Select year"
                   />
                 </div>
                 
