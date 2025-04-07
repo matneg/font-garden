@@ -108,7 +108,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   ];
   
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 101 }, (_, i) => (currentYear - 50 + i).toString());
+  // Modified to include years from 1900 to current year + 10
+  const years = Array.from({ length: currentYear - 1900 + 11 }, (_, i) => (1900 + i).toString());
   
   // Form for personal project
   const personalForm = useForm<PersonalProjectFormValues>({
