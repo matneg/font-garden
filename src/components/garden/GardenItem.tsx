@@ -2,6 +2,7 @@ import React from 'react';
 import { Font } from '@/types';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { loadGoogleFont, loadCustomFont, getFontStyle } from '@/lib/fontLoader';
 
 interface GardenItemProps {
   font: Font;
@@ -9,17 +10,12 @@ interface GardenItemProps {
 }
 
 const GardenItem: React.FC<GardenItemProps> = ({ font, index }) => {
-  // Load Google Fonts dynamically
+  // Load the appropriate font on component mount
   React.useEffect(() => {
-    if (!font.isCustom && font.fontFamily) {
-      const link = document.createElement('link');
-      link.href = `https://fonts.googleapis.com/css2?family=${font.fontFamily.replace(/\s+/g, '+')}&display=swap`;
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-      
-      return () => {
-        document.head.removeChild(link);
-      };
+    if (font.isCustom) {
+      loadCustomFont(font);
+    } else if (font.fontFamily) {
+      loadGoogleFont(font.fontFamily);
     }
   }, [font]);
   
@@ -39,10 +35,8 @@ const GardenItem: React.FC<GardenItemProps> = ({ font, index }) => {
   
   const colorClass = getColorByCategory(font.category);
   
-  // Define font style
-  const fontStyle = !font.isCustom && font.fontFamily
-    ? { fontFamily: `"${font.fontFamily}", ${font.category}` }
-    : {};
+  // Get the appropriate font style
+  const fontStyle = getFontStyle(font);
   
   // Staggered animation delay based on index
   const delay = index * 0.1;
