@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Font } from '@/types';
 import { motion } from 'framer-motion';
@@ -14,7 +13,7 @@ const GardenItem: React.FC<GardenItemProps> = ({ font, index }) => {
   React.useEffect(() => {
     if (!font.isCustom && font.fontFamily) {
       const link = document.createElement('link');
-      link.href = `https://fonts.googleapis.com/css2?family=${font.fontFamily.replace(' ', '+')}&display=swap`;
+      link.href = `https://fonts.googleapis.com/css2?family=${font.fontFamily.replace(/\s+/g, '+')}&display=swap`;
       link.rel = 'stylesheet';
       document.head.appendChild(link);
       
@@ -41,8 +40,8 @@ const GardenItem: React.FC<GardenItemProps> = ({ font, index }) => {
   const colorClass = getColorByCategory(font.category);
   
   // Define font style
-  const fontStyle = !font.isCustom 
-    ? { fontFamily: font.fontFamily || 'sans-serif' } 
+  const fontStyle = !font.isCustom && font.fontFamily
+    ? { fontFamily: `"${font.fontFamily}", ${font.category}` }
     : {};
   
   // Staggered animation delay based on index
