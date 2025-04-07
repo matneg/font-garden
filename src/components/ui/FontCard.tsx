@@ -3,30 +3,24 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Font } from '@/types';
+import { loadGoogleFont, loadCustomFont, getFontStyle } from '@/lib/fontLoader';
 
 interface FontCardProps {
   font: Font;
 }
 
 const FontCard: React.FC<FontCardProps> = ({ font }) => {
-  // Load Google Fonts dynamically
+  // Load the appropriate font on component mount
   React.useEffect(() => {
-    if (!font.isCustom && font.fontFamily) {
-      const link = document.createElement('link');
-      link.href = `https://fonts.googleapis.com/css2?family=${font.fontFamily.replace(/\s+/g, '+')}&display=swap`;
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
-      
-      return () => {
-        document.head.removeChild(link);
-      };
+    if (font.isCustom) {
+      loadCustomFont(font);
+    } else if (font.fontFamily) {
+      loadGoogleFont(font.fontFamily);
     }
   }, [font]);
 
-  // Define font style for both card title and preview area
-  const fontStyle = !font.isCustom && font.fontFamily 
-    ? { fontFamily: `"${font.fontFamily}", ${font.category}` } 
-    : {};
+  // Get the appropriate font style
+  const fontStyle = getFontStyle(font);
 
   return (
     <Link to={`/fonts/${font.id}`}>
