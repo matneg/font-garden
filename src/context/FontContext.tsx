@@ -1,7 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Font, Project, FontCategory, ProjectType, FontFormat } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { extractOpenGraphImage, extractFirstUrl } from '@/utils/openGraph';
 
 interface FontContextType {
   fonts: Font[];
@@ -21,7 +23,7 @@ interface FontContextType {
   getFontById: (id: string) => Font | undefined;
   getProjectById: (id: string) => Project | undefined;
   addFont: (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>) => Promise<boolean | undefined>;
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'fontCount'>) => Promise<void>;
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'fontCount'>) => Promise<{ id: string } | undefined>;
   addFontToProject: (fontId: string, projectId: string) => Promise<void>;
   removeFontFromProject: (fontId: string, projectId: string) => Promise<void>;
   deleteFont: (id: string) => Promise<void>;
@@ -77,8 +79,8 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('projects')
-        .select('*, font_projects(font_id), type')
-        .order('name');
+        .select('*, font_projects(font_id), type, images, preview_image_url')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -91,10 +93,52 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         type: (project.type as ProjectType) || 'personal',
         createdAt: project.created_at,
         updatedAt: project.updated_at,
-        fontCount: project.font_projects ? project.font_projects.length : 0
+        fontCount: project.font_projects ? project.font_projects.length : 0,
+        images: project.images || [],
+        previewImageUrl: project.preview_image_url || null
       }));
 
-      setProjects(transformedProjects);
+      // If no previewImageUrl is set but there are images, use the first image
+      const projectsWithPreviewImage = await Promise.all(
+        transformedProjects.map(async (project) => {
+          if (!project.previewImageUrl) {
+            // If there are images, use the first one
+            if (project.images && project.images.length > 0) {
+              return {
+                ...project,
+                previewImageUrl: project.images[0]
+              };
+            }
+            
+            // Try to extract an image from external links in the description
+            if (project.description) {
+              const url = extractFirstUrl(project.description);
+              if (url) {
+                try {
+                  const ogImage = await extractOpenGraphImage(url);
+                  if (ogImage) {
+                    // Update the project in the database with the extracted image
+                    await supabase
+                      .from('projects')
+                      .update({ preview_image_url: ogImage })
+                      .eq('id', project.id);
+                    
+                    return {
+                      ...project,
+                      previewImageUrl: ogImage
+                    };
+                  }
+                } catch (error) {
+                  console.error('Error fetching Open Graph image:', error);
+                }
+              }
+            }
+          }
+          return project;
+        })
+      );
+
+      setProjects(projectsWithPreviewImage);
     } catch (err) {
       console.error('Error fetching projects:', err);
       setError('Failed to load projects');
@@ -219,7 +263,9 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           name: project.name,
           description: project.description,
           type: project.type || 'personal',
-          user_id: userId
+          user_id: userId,
+          images: project.images || null,
+          preview_image_url: project.previewImageUrl || null
         })
         .select();
 
@@ -227,6 +273,11 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       toast.success('Project created successfully!');
       await fetchProjects();
+      
+      // Return the created project ID for further operations
+      if (data && data[0]) {
+        return { id: data[0].id };
+      }
     } catch (err) {
       console.error('Error adding project:', err);
       toast.error('Failed to create project');

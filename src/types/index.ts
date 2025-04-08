@@ -31,8 +31,10 @@ export interface Project {
   id: string;
   name: string;
   description: string;
-  type?: ProjectType;  // Made sure this is explicitly defined
+  type?: ProjectType;
   createdAt: string;
   updatedAt: string;
   fontCount: number;
+  images?: string[];
+  previewImageUrl?: string;
 }
