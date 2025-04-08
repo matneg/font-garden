@@ -261,7 +261,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
         fontFormat: fontFile ? determineFileFormat(fontFile.name) : null,
       });
       
-      if (result !== false) {
+      if (result === true) {
         resetForm();
         onOpenChange(false);
       }
