@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +16,7 @@ import AddProject from "./pages/AddProject";
 import NotFound from "./pages/NotFound";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
+import { FontPreloader } from "./lib/FontPreloader";
 
 // For smoother animations
 import { AnimatePresence } from "framer-motion";
@@ -28,6 +28,7 @@ const App = () => (
     <BrowserRouter>
       <AuthProvider>
         <FontProvider>
+          <FontPreloader />
           <TooltipProvider>
             <Toaster />
             <Sonner />
