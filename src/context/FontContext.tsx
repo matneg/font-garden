@@ -159,6 +159,24 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
+      // Check if the font already exists in the user's collection
+      const isDuplicate = fonts.some(existingFont => {
+        // For Google Fonts, check by font family name
+        if (!font.isCustom && existingFont.fontFamily === font.fontFamily) {
+          return true;
+        }
+        // For custom fonts, check by name since the font family might be formatted differently
+        if (font.isCustom && existingFont.isCustom && existingFont.name === font.name) {
+          return true;
+        }
+        return false;
+      });
+
+      if (isDuplicate) {
+        toast.warning(`${font.name} is already in your Garden`);
+        return;
+      }
+      
       const userId = session.user.id;
       
       const { data, error } = await supabase

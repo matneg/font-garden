@@ -43,14 +43,12 @@ import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Define interface for Google Font data
 interface GoogleFont {
   family: string;
   category: string;
   variants: string[];
 }
 
-// Define the form schema with zod
 const formSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   fontFamily: z.string().min(2, 'Font family must be at least 2 characters'),
@@ -136,7 +134,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
         setGoogleFonts(data.items);
       } catch (error) {
         console.error('Error fetching Google Fonts:', error);
-        // Fallback to the hardcoded list
         const fallbackFonts = FALLBACK_GOOGLE_FONTS.map(font => ({
           family: font.name,
           category: font.category,
@@ -204,11 +201,9 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     try {
       setUploadLoading(true);
       
-      // For custom fonts, upload to Supabase storage first
       let fontFilePath = null;
       
       if (values.isCustom && fontFile) {
-        // Check if user is authenticated (needed for storage access)
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
@@ -217,27 +212,24 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
           return;
         }
         
-        // First check if the fonts bucket exists, create it if it doesn't
         const { data: buckets } = await supabase.storage.listBuckets();
         const fontsBucketExists = buckets?.some(bucket => bucket.name === 'fonts');
         
         if (!fontsBucketExists) {
           await supabase.storage.createBucket('fonts', {
             public: true,
-            fileSizeLimit: 1024 * 1024 * 10, // 10MB limit
+            fileSizeLimit: 1024 * 1024 * 10,
           });
           
           console.log('Created fonts bucket');
         }
         
-        // Create a unique file name to prevent collisions
         const timestamp = new Date().getTime();
         const safeName = fontFile.name.replace(/\s+/g, '_');
         const fileName = `${timestamp}_${safeName}`;
         
         console.log('Uploading font to Supabase:', fileName);
         
-        // Upload to Supabase storage in the 'fonts' bucket
         const { data, error } = await supabase.storage
           .from('fonts')
           .upload(fileName, fontFile, {
@@ -250,7 +242,6 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
           throw new Error(`Error uploading font: ${error.message}`);
         }
         
-        // Get public URL
         const { data: urlData } = supabase.storage
           .from('fonts')
           .getPublicUrl(fileName);
