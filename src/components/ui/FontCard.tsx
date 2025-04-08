@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,8 +27,8 @@ const FontCard: React.FC<FontCardProps> = ({ font }) => {
       <Card className="h-full overflow-hidden card-hover">
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle className="text-lg">
-              <span style={getFontFamily()}>{font.name}</span>
+            <CardTitle className="text-lg font-sans">
+              {font.name}
             </CardTitle>
             <Badge variant={font.isCustom ? "outline" : "secondary"}>
               {font.isCustom ? 'Custom' : 'Google Font'}
