@@ -250,7 +250,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
         console.log('Font uploaded successfully:', fontFilePath);
       }
       
-      await addFont({
+      const result = await addFont({
         name: values.name,
         fontFamily: values.fontFamily,
         category: values.category as FontCategory,
@@ -261,9 +261,10 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
         fontFormat: fontFile ? determineFileFormat(fontFile.name) : null,
       });
       
-      toast.success('Font planted successfully!');
-      resetForm();
-      onOpenChange(false);
+      if (result !== false) {
+        resetForm();
+        onOpenChange(false);
+      }
     } catch (error: any) {
       console.error('Error adding font:', error);
       toast.error(`Failed to plant font: ${error.message}`);

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Font, Project, FontCategory, ProjectType, FontFormat } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +20,7 @@ interface FontContextType {
   setProjectSortOrder: (order: 'newest' | 'oldest' | 'name-asc' | 'name-desc') => void;
   getFontById: (id: string) => Font | undefined;
   getProjectById: (id: string) => Project | undefined;
-  addFont: (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>) => Promise<void>;
+  addFont: (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>) => Promise<boolean | undefined>;
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'fontCount'>) => Promise<void>;
   addFontToProject: (fontId: string, projectId: string) => Promise<void>;
   removeFontFromProject: (fontId: string, projectId: string) => Promise<void>;
@@ -150,22 +149,19 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return projects.find(project => project.id === id);
   };
 
-  const addFont = async (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>) => {
+  const addFont = async (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>): Promise<boolean | undefined> => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         toast.error('You must be logged in to add a font');
-        return;
+        return false;
       }
       
-      // Check if the font already exists in the user's collection
       const isDuplicate = fonts.some(existingFont => {
-        // For Google Fonts, check by font family name
         if (!font.isCustom && existingFont.fontFamily === font.fontFamily) {
           return true;
         }
-        // For custom fonts, check by name since the font family might be formatted differently
         if (font.isCustom && existingFont.isCustom && existingFont.name === font.name) {
           return true;
         }
@@ -174,7 +170,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (isDuplicate) {
         toast.warning(`${font.name} is already in your Garden`);
-        return;
+        return false;
       }
       
       const userId = session.user.id;
@@ -196,11 +192,13 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
       
-      toast.success('Font added successfully!');
+      toast.success('Font planted successfully!');
       await fetchFonts();
+      return true;
     } catch (err) {
       console.error('Error adding font:', err);
       toast.error('Failed to add font');
+      return false;
     }
   };
 
@@ -220,7 +218,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .insert({
           name: project.name,
           description: project.description,
-          type: project.type || 'personal', // Ensure type is properly set
+          type: project.type || 'personal',
           user_id: userId
         })
         .select();
