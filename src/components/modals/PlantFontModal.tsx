@@ -37,10 +37,10 @@ import {
 } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useFontContext } from '@/context/FontContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Sprout, Upload, FileText, ChevronsUpDown, Loader2, CheckIcon, X, Search } from 'lucide-react';
 import { FontCategory, FontFormat } from '@/types';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 // Define interface for Google Font data
@@ -217,14 +217,33 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
           return;
         }
         
+        // First check if the fonts bucket exists, create it if it doesn't
+        const { data: buckets } = await supabase.storage.listBuckets();
+        const fontsBucketExists = buckets?.some(bucket => bucket.name === 'fonts');
+        
+        if (!fontsBucketExists) {
+          await supabase.storage.createBucket('fonts', {
+            public: true,
+            fileSizeLimit: 1024 * 1024 * 10, // 10MB limit
+          });
+          
+          console.log('Created fonts bucket');
+        }
+        
         // Create a unique file name to prevent collisions
         const timestamp = new Date().getTime();
-        const fileName = `${timestamp}_${fontFile.name.replace(/\s+/g, '_')}`;
+        const safeName = fontFile.name.replace(/\s+/g, '_');
+        const fileName = `${timestamp}_${safeName}`;
+        
+        console.log('Uploading font to Supabase:', fileName);
         
         // Upload to Supabase storage in the 'fonts' bucket
         const { data, error } = await supabase.storage
           .from('fonts')
-          .upload(fileName, fontFile);
+          .upload(fileName, fontFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
         
         if (error) {
           console.error('Font upload error:', error);
@@ -237,6 +256,7 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
           .getPublicUrl(fileName);
         
         fontFilePath = urlData.publicUrl;
+        console.log('Font uploaded successfully:', fontFilePath);
       }
       
       await addFont({
@@ -253,9 +273,9 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
       toast.success('Font planted successfully!');
       resetForm();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding font:', error);
-      toast.error('Failed to plant font');
+      toast.error(`Failed to plant font: ${error.message}`);
     } finally {
       setUploadLoading(false);
     }
@@ -267,7 +287,10 @@ const PlantFontModal: React.FC<PlantFontModalProps> = ({
     setSelectedFontData(null);
     setSearchQuery('');
     setFontFile(null);
-    setFontPreview(null);
+    if (fontPreview) {
+      URL.revokeObjectURL(fontPreview);
+      setFontPreview(null);
+    }
     setDropdownOpen(false);
   };
 
