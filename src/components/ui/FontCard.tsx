@@ -3,24 +3,23 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Font } from '@/types';
-import { loadGoogleFont, loadCustomFont, getFontStyle } from '@/lib/fontLoader';
 
 interface FontCardProps {
   font: Font;
 }
 
 const FontCard: React.FC<FontCardProps> = ({ font }) => {
-  // Load the appropriate font on component mount
-  React.useEffect(() => {
+  const getFontFamily = (): React.CSSProperties => {
     if (font.isCustom) {
-      loadCustomFont(font);
+      // For custom fonts, use a sanitized version of the font name as the font family
+      const fontFamily = font.name.replace(/[^a-zA-Z0-9]/g, '');
+      return { fontFamily: `"${fontFamily}", ${font.category}` };
     } else if (font.fontFamily) {
-      loadGoogleFont(font.fontFamily);
+      // For Google fonts
+      return { fontFamily: `"${font.fontFamily}", ${font.category}` };
     }
-  }, [font]);
-
-  // Get the appropriate font style
-  const fontStyle = getFontStyle(font);
+    return {};
+  };
 
   return (
     <Link to={`/fonts/${font.id}`}>
@@ -28,7 +27,7 @@ const FontCard: React.FC<FontCardProps> = ({ font }) => {
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg">
-              <span style={fontStyle}>{font.name}</span>
+              <span style={getFontFamily()}>{font.name}</span>
             </CardTitle>
             <Badge variant={font.isCustom ? "outline" : "secondary"}>
               {font.isCustom ? 'Custom' : 'Google Font'}
@@ -39,7 +38,7 @@ const FontCard: React.FC<FontCardProps> = ({ font }) => {
           <div 
             className="h-24 flex items-center justify-center bg-muted/30 rounded-md overflow-hidden mb-4"
           >
-            <p className="text-2xl truncate w-full text-center px-2" style={fontStyle}>
+            <p className="text-2xl truncate w-full text-center px-2" style={getFontFamily()}>
               {font.name}
             </p>
           </div>
