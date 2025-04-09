@@ -101,33 +101,40 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const projectsWithPreviewImage = await Promise.all(
         transformedProjects.map(async (project) => {
-          if (!project.previewImageUrl) {
-            if (project.images && project.images.length > 0) {
+          if (!project.previewImageUrl && project.images && project.images.length > 0) {
+            try {
+              await supabase
+                .from('projects')
+                .update({ preview_image_url: project.images[0] })
+                .eq('id', project.id);
+              
               return {
                 ...project,
                 previewImageUrl: project.images[0]
               };
+            } catch (error) {
+              console.error('Error updating preview image URL:', error);
             }
-            
-            if (project.description) {
-              const url = extractFirstUrl(project.description);
-              if (url) {
-                try {
-                  const ogImage = await extractOpenGraphImage(url);
-                  if (ogImage) {
-                    await supabase
-                      .from('projects')
-                      .update({ preview_image_url: ogImage })
-                      .eq('id', project.id);
-                    
-                    return {
-                      ...project,
-                      previewImageUrl: ogImage
-                    };
-                  }
-                } catch (error) {
-                  console.error('Error fetching Open Graph image:', error);
+          }
+          
+          if (!project.previewImageUrl && project.description) {
+            const url = extractFirstUrl(project.description);
+            if (url) {
+              try {
+                const ogImage = await extractOpenGraphImage(url);
+                if (ogImage) {
+                  await supabase
+                    .from('projects')
+                    .update({ preview_image_url: ogImage })
+                    .eq('id', project.id);
+                  
+                  return {
+                    ...project,
+                    previewImageUrl: ogImage
+                  };
                 }
+              } catch (error) {
+                console.error('Error fetching Open Graph image:', error);
               }
             }
           }

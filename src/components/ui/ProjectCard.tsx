@@ -54,6 +54,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
   // Handle image error
   const handleImageError = () => {
+    console.log('Image failed to load, falling back to placeholder');
     setImageError(true);
     setImageUrl(null);
   };
