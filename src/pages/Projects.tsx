@@ -11,6 +11,8 @@ import ProjectsSearchBar from '@/components/ui/ProjectsSearchBar';
 const Projects = () => {
   const { filteredProjects, loading } = useFontContext();
   
+  console.log("Rendering projects:", filteredProjects);
+  
   return (
     <div className="container mx-auto px-4 py-8 page-transition">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">

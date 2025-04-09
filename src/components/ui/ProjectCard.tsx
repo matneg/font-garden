@@ -12,40 +12,51 @@ interface ProjectCardProps {
 
 const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     const fetchImage = async () => {
-      // Priority 1: Check if the project has uploaded images
-      if (project.images && project.images.length > 0) {
-        setImageUrl(project.images[0]);
-        return;
-      }
+      setIsLoading(true);
+      setImageError(false);
       
-      // Priority 2: Check if the project has a previewImageUrl already set
-      if (project.previewImageUrl) {
-        setImageUrl(project.previewImageUrl);
-        return;
-      }
-      
-      // Priority 3: Extract image from external links in the description
-      if (project.description) {
-        // Try to extract links from the description
-        const url = extractFirstUrl(project.description);
-        if (url) {
-          setIsLoading(true);
-          try {
-            const ogImage = await extractOpenGraphImage(url);
-            if (ogImage) {
-              setImageUrl(ogImage);
+      try {
+        // Priority 1: Check if the project has uploaded images
+        if (project.images && project.images.length > 0) {
+          console.log('Using uploaded image:', project.images[0]);
+          setImageUrl(project.images[0]);
+          return;
+        }
+        
+        // Priority 2: Check if the project has a previewImageUrl already set
+        if (project.previewImageUrl) {
+          console.log('Using preview image URL:', project.previewImageUrl);
+          setImageUrl(project.previewImageUrl);
+          return;
+        }
+        
+        // Priority 3: Extract image from external links in the description
+        if (project.description) {
+          // Try to extract links from the description
+          const url = extractFirstUrl(project.description);
+          if (url) {
+            try {
+              const ogImage = await extractOpenGraphImage(url);
+              if (ogImage) {
+                console.log('Using Open Graph image:', ogImage);
+                setImageUrl(ogImage);
+              }
+            } catch (error) {
+              console.error('Error fetching Open Graph image:', error);
+              setImageError(true);
             }
-          } catch (error) {
-            console.error('Error fetching Open Graph image:', error);
-          } finally {
-            setIsLoading(false);
           }
         }
+      } catch (error) {
+        console.error('Error in fetchImage:', error);
+        setImageError(true);
+      } finally {
+        setIsLoading(false);
       }
     };
 
