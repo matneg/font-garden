@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Font, Project, FontCategory, ProjectType, FontFormat } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -98,11 +97,9 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         previewImageUrl: project.preview_image_url || null
       }));
 
-      // If no previewImageUrl is set but there are images, use the first image
       const projectsWithPreviewImage = await Promise.all(
         transformedProjects.map(async (project) => {
           if (!project.previewImageUrl) {
-            // If there are images, use the first one
             if (project.images && project.images.length > 0) {
               return {
                 ...project,
@@ -110,14 +107,12 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
               };
             }
             
-            // Try to extract an image from external links in the description
             if (project.description) {
               const url = extractFirstUrl(project.description);
               if (url) {
                 try {
                   const ogImage = await extractOpenGraphImage(url);
                   if (ogImage) {
-                    // Update the project in the database with the extracted image
                     await supabase
                       .from('projects')
                       .update({ preview_image_url: ogImage })
@@ -264,8 +259,8 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: project.description,
           type: project.type || 'personal',
           user_id: userId,
-          images: project.images || null,
-          preview_image_url: project.previewImageUrl || null
+          images: project.images,
+          preview_image_url: project.previewImageUrl
         })
         .select();
 
@@ -274,7 +269,6 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Project created successfully!');
       await fetchProjects();
       
-      // Return the created project ID for further operations
       if (data && data[0]) {
         return { id: data[0].id };
       }

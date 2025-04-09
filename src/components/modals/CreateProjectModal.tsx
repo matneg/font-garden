@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -57,7 +56,6 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Schema for personal project
 const personalProjectSchema = z.object({
   name: z.string().min(1, { message: "Project name is required" }),
   month: z.string().optional(),
@@ -69,7 +67,6 @@ const personalProjectSchema = z.object({
   projectImages: z.any().optional(),
 });
 
-// Schema for external reference
 const externalReferenceSchema = z.object({
   name: z.string().min(1, { message: "Reference name is required" }),
   month: z.string().optional(),
@@ -102,21 +99,17 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const { addProject } = useFontContext();
   
-  // Use external state if provided, otherwise use internal state
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = externalOnOpenChange || setInternalOpen;
 
-  // Generate arrays for month and year selection
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
   
   const currentYear = new Date().getFullYear();
-  // Modified to include years from 1900 to current year + 10
   const years = Array.from({ length: currentYear - 1900 + 11 }, (_, i) => (1900 + i).toString());
-  
-  // Form for personal project
+
   const personalForm = useForm<PersonalProjectFormValues>({
     resolver: zodResolver(personalProjectSchema),
     defaultValues: {
@@ -131,7 +124,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     },
   });
 
-  // Form for external reference
   const externalForm = useForm<ExternalReferenceFormValues>({
     resolver: zodResolver(externalReferenceSchema),
     defaultValues: {
@@ -153,20 +145,16 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     const newFiles: File[] = [];
     const newPreviewUrls: string[] = [];
     
-    // Process each file
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       
-      // Validate file type
       if (!file.type.match(/image\/(jpeg|jpg|png|webp)/i)) {
         toast.error(`File ${file.name} is not a supported image format`);
         continue;
       }
       
-      // Add file to selected files
       newFiles.push(file);
       
-      // Create a preview URL
       const url = URL.createObjectURL(file);
       newPreviewUrls.push(url);
     }
@@ -174,10 +162,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setSelectedFiles(prev => [...prev, ...newFiles]);
     setPreviewUrls(prev => [...prev, ...newPreviewUrls]);
     
-    // Reset input value so the same file can be selected again
     e.target.value = '';
     
-    // Set form value
     if (activeTab === 'personal') {
       personalForm.setValue('projectImages', selectedFiles);
     } else {
@@ -186,10 +172,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
   };
 
   const removeFile = (index: number) => {
-    // Release object URL to avoid memory leaks
     URL.revokeObjectURL(previewUrls[index]);
     
-    // Remove file from arrays
     const newFiles = [...selectedFiles];
     const newPreviewUrls = [...previewUrls];
     
@@ -199,7 +183,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setSelectedFiles(newFiles);
     setPreviewUrls(newPreviewUrls);
     
-    // Update form value
     if (activeTab === 'personal') {
       personalForm.setValue('projectImages', newFiles);
     } else {
@@ -214,6 +197,22 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     const uploadedUrls: string[] = [];
     
     try {
+      const { error: bucketError } = await supabase.storage
+        .getBucket('project-images');
+      
+      if (bucketError) {
+        const { error: createBucketError } = await supabase.storage
+          .createBucket('project-images', {
+            public: true
+          });
+          
+        if (createBucketError) {
+          console.error('Error creating bucket:', createBucketError);
+          toast.error('Failed to create storage bucket');
+          return null;
+        }
+      }
+      
       for (const file of selectedFiles) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
@@ -228,7 +227,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           continue;
         }
         
-        // Get public URL
         const { data: { publicUrl } } = supabase.storage
           .from('project-images')
           .getPublicUrl(filePath);
@@ -248,7 +246,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
   const onSubmitPersonal = async (values: PersonalProjectFormValues) => {
     try {
-      // Get user session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -256,7 +253,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         return;
       }
       
-      // Format the date information if provided
       let description = "";
       
       if (values.field) {
@@ -286,26 +282,22 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         description += `External Links: ${values.externalLinks}\n`;
       }
       
-      // Create the project first to get an ID for the images
       const result = await addProject({
         name: values.name,
         description: description.trim(),
         type: 'personal' as ProjectType,
       });
       
-      // Check if project was created
       if (result && result.id) {
-        // Upload images if there are any
         if (selectedFiles.length > 0) {
           const imageUrls = await uploadImages(session.user.id, result.id);
           
           if (imageUrls && imageUrls.length > 0) {
-            // Update the project with image URLs
             const { error } = await supabase
               .from('projects')
               .update({ 
                 images: imageUrls,
-                preview_image_url: imageUrls[0] // First image as preview
+                preview_image_url: imageUrls[0]
               })
               .eq('id', result.id);
               
@@ -330,7 +322,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
   const onSubmitExternal = async (values: ExternalReferenceFormValues) => {
     try {
-      // Get user session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -338,7 +329,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         return;
       }
       
-      // Create the project first
       let description = "External Reference\n";
       
       if (values.field) {
@@ -364,26 +354,22 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         description += `Authors: ${values.authors}\n`;
       }
       
-      // Create the project first to get an ID for the images
       const result = await addProject({
         name: values.name,
         description: description.trim(),
         type: 'reference' as ProjectType,
       });
       
-      // Check if project was created
       if (result && result.id) {
-        // Upload images if there are any
         if (selectedFiles.length > 0) {
           const imageUrls = await uploadImages(session.user.id, result.id);
           
           if (imageUrls && imageUrls.length > 0) {
-            // Update the project with image URLs
             const { error } = await supabase
               .from('projects')
               .update({ 
                 images: imageUrls,
-                preview_image_url: imageUrls[0] // First image as preview
+                preview_image_url: imageUrls[0]
               })
               .eq('id', result.id);
               
@@ -394,7 +380,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           }
         }
         
-        // Store external links in the external_references table
         const links = values.externalLinks.split(",").map(link => link.trim());
         
         for (const url of links) {
@@ -405,7 +390,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                 url,
                 project_name: values.name,
                 user_id: session.user.id,
-                project_id: result.id // Add project_id to the external reference
+                project_id: result.id
               });
               
             if (error) {
@@ -427,10 +412,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     }
   };
 
-  // Handle dialog close - reset file selection
   const handleDialogClose = (open: boolean) => {
     if (!open) {
-      // Clean up preview URLs to avoid memory leaks
       previewUrls.forEach(url => URL.revokeObjectURL(url));
       setSelectedFiles([]);
       setPreviewUrls([]);
@@ -438,7 +421,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     setOpen(open);
   };
 
-  // Custom Combobox component for month and year selections
   const ComboboxFormField = ({ 
     form, 
     name, 
@@ -531,7 +513,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     );
   };
 
-  // Image upload component
   const ImageUploadField = () => (
     <div className="space-y-4">
       <div className="flex flex-col">
@@ -562,7 +543,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           </label>
         </div>
       
-        {/* Preview selected images */}
         {previewUrls.length > 0 && (
           <div className="grid grid-cols-3 gap-2 mt-4">
             {previewUrls.map((url, index) => (
@@ -620,7 +600,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             </TabsTrigger>
           </TabsList>
           
-          {/* Personal Project Form */}
           <TabsContent value="personal" className="space-y-4">
             <Form {...personalForm}>
               <form onSubmit={personalForm.handleSubmit(onSubmitPersonal)} className="space-y-4">
@@ -717,7 +696,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                   )}
                 />
                 
-                {/* Image upload field */}
                 <ImageUploadField />
                 
                 <div className="flex justify-between pt-2">
@@ -738,7 +716,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             </Form>
           </TabsContent>
           
-          {/* External Reference Form */}
           <TabsContent value="external" className="space-y-4">
             <Form {...externalForm}>
               <form onSubmit={externalForm.handleSubmit(onSubmitExternal)} className="space-y-4">
@@ -835,7 +812,6 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                   )}
                 />
                 
-                {/* Image upload field */}
                 <ImageUploadField />
                 
                 <div className="flex justify-between pt-2">
