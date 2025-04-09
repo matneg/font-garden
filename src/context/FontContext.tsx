@@ -85,6 +85,8 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       console.log('Fetched projects:', data);
 
+      if (!data) return;
+
       const transformedProjects: Project[] = data.map(project => ({
         id: project.id,
         name: project.name,
@@ -259,7 +261,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: project.description,
           type: project.type || 'personal',
           user_id: userId,
-          images: project.images,
+          images: project.images || [],
           preview_image_url: project.previewImageUrl
         })
         .select();
