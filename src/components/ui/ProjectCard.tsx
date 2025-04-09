@@ -1,9 +1,9 @@
-
+// src/components/ui/ProjectCard.tsx
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Project } from '@/types';
 import { Link } from 'react-router-dom';
-import { ImageIcon } from 'lucide-react';
+import { ImageIcon, Loader2 } from 'lucide-react';
 import { extractOpenGraphImage, extractFirstUrl } from '@/utils/openGraph';
 
 interface ProjectCardProps {
@@ -23,21 +23,22 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       try {
         // Priority 1: Check if the project has uploaded images
         if (project.images && project.images.length > 0) {
-          console.log('Using uploaded image:', project.images[0]);
+          console.log('Using project image:', project.images[0]);
           setImageUrl(project.images[0]);
+          setIsLoading(false);
           return;
         }
         
-        // Priority 2: Check if the project has a previewImageUrl already set
+        // Priority 2: Check if the project has a previewImageUrl
         if (project.previewImageUrl) {
           console.log('Using preview image URL:', project.previewImageUrl);
           setImageUrl(project.previewImageUrl);
+          setIsLoading(false);
           return;
         }
         
         // Priority 3: Extract image from external links in the description
         if (project.description) {
-          // Try to extract links from the description
           const url = extractFirstUrl(project.description);
           if (url) {
             try {
