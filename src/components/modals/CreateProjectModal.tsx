@@ -202,7 +202,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     }
   };
 
-  // UPDATED uploadImages function with better bucket handling
+  // FIXED: Simplified upload function that doesn't try to create/get buckets
   const uploadImages = async (userId: string, projectId: string): Promise<string[] | null> => {
     if (selectedFiles.length === 0) return null;
     
@@ -212,38 +212,23 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     try {
       console.log('Starting image upload process...');
       
-      // Check if we can access the bucket (don't try to create it - that requires admin rights)
-      const { data: bucketList, error: listError } = await supabase.storage
-        .from('project-images')
-        .list();
-      
-      if (listError) {
-        console.error('Error checking bucket access:', listError);
-        toast.error('Unable to access storage. Please check storage permissions.');
-        return null;
-      }
-      
-      console.log('Successfully accessed project-images bucket');
-      
-      // Upload each file with a simpler path structure
+      // Upload each file with a simple filename
       for (const file of selectedFiles) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         
-        // Simplified path - just use the filename directly
-        const filePath = fileName;
-        
         console.log(`Uploading file: ${fileName}`);
         
-        const { error: uploadError } = await supabase.storage
-          .from('project-images')
-          .upload(filePath, file, {
+        // Try to upload directly to the bucket without checking if it exists
+        const { data, error } = await supabase.storage
+          .from('project-images')  // bucket should already exist in Supabase
+          .upload(fileName, file, {
             cacheControl: '3600',
             upsert: false
           });
           
-        if (uploadError) {
-          console.error('Error uploading image:', uploadError);
+        if (error) {
+          console.error('Error uploading image:', error);
           toast.error(`Failed to upload: ${file.name}`);
           continue;
         }
@@ -252,7 +237,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         
         const { data: { publicUrl } } = supabase.storage
           .from('project-images')
-          .getPublicUrl(filePath);
+          .getPublicUrl(fileName);
           
         console.log('Public URL generated:', publicUrl);
         uploadedUrls.push(publicUrl);
