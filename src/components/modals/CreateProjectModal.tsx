@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { z } from 'zod';
+// src/components/modals/CreateProjectModal.tsx
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { toast } from 'sonner';
-import { useFontContext } from '@/context/FontContext';
-import { supabase } from '@/integrations/supabase/client';
-import { ProjectType } from '@/types';
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
+import * as z from 'zod';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
   DialogTitle,
-  DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Form,
   FormControl,
@@ -24,22 +24,34 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { User, ExternalLink, Plus, Calendar, Check, ChevronsUpDown, Upload, Image, X, Loader2 } from 'lucide-react';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useFontContext } from '@/context/FontContext';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  User, 
+  ExternalLink, 
+  Plus, 
+  Calendar, 
+  Check, 
+  ChevronsUpDown, 
+  Upload, 
+  Image, 
+  X, 
+  Loader2 
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Command,
@@ -54,7 +66,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ProjectType } from '@/types';
 
 const personalProjectSchema = z.object({
   name: z.string().min(1, { message: "Project name is required" }),
@@ -197,10 +209,21 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     const uploadedUrls: string[] = [];
     
     try {
-      const { error: bucketError } = await supabase.storage
-        .getBucket('project-images');
+      console.log('Starting image upload process...');
       
-      if (bucketError) {
+      // Get or create storage bucket
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        console.error('Error listing buckets:', bucketsError);
+        throw bucketsError;
+      }
+      
+      // Check if our bucket exists
+      const bucketExists = buckets?.some(bucket => bucket.name === 'project-images');
+      
+      if (!bucketExists) {
+        console.log('Project-images bucket does not exist, creating it...');
         const { error: createBucketError } = await supabase.storage
           .createBucket('project-images', {
             public: true
@@ -208,32 +231,43 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           
         if (createBucketError) {
           console.error('Error creating bucket:', createBucketError);
-          toast.error('Failed to create storage bucket');
-          return null;
+          throw createBucketError;
         }
+        
+        console.log('Bucket created successfully');
       }
       
+      // Upload each file
       for (const file of selectedFiles) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         const filePath = `${userId}/projects/${projectId}/${fileName}`;
         
+        console.log(`Uploading file: ${fileName} to path: ${filePath}`);
+        
         const { error: uploadError, data } = await supabase.storage
           .from('project-images')
-          .upload(filePath, file);
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
           
         if (uploadError) {
           console.error('Error uploading image:', uploadError);
           continue;
         }
         
+        console.log('File uploaded successfully, getting public URL...');
+        
         const { data: { publicUrl } } = supabase.storage
           .from('project-images')
           .getPublicUrl(filePath);
           
+        console.log('Public URL generated:', publicUrl);
         uploadedUrls.push(publicUrl);
       }
       
+      console.log('All uploads complete. URLs:', uploadedUrls);
       return uploadedUrls;
     } catch (error) {
       console.error('Error in image upload process:', error);
@@ -290,9 +324,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       
       if (result && result.id) {
         if (selectedFiles.length > 0) {
+          console.log('Uploading images for project:', result.id);
           const imageUrls = await uploadImages(session.user.id, result.id);
           
           if (imageUrls && imageUrls.length > 0) {
+            console.log('Updating project with image URLs:', imageUrls);
+            
             const { error } = await supabase
               .from('projects')
               .update({ 
@@ -304,6 +341,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
             if (error) {
               console.error('Error updating project with images:', error);
               toast.error('Failed to associate images with project');
+            } else {
+              console.log('Project updated with images successfully');
             }
           }
         }
@@ -354,6 +393,10 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         description += `Authors: ${values.authors}\n`;
       }
       
+      if (values.externalLinks) {
+        description += `External Links: ${values.externalLinks}\n`;
+      }
+      
       const result = await addProject({
         name: values.name,
         description: description.trim(),
@@ -362,9 +405,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
       
       if (result && result.id) {
         if (selectedFiles.length > 0) {
+          console.log('Uploading images for reference project:', result.id);
           const imageUrls = await uploadImages(session.user.id, result.id);
           
           if (imageUrls && imageUrls.length > 0) {
+            console.log('Updating reference project with image URLs:', imageUrls);
+            
             const { error } = await supabase
               .from('projects')
               .update({ 
@@ -374,12 +420,15 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
               .eq('id', result.id);
               
             if (error) {
-              console.error('Error updating project with images:', error);
-              toast.error('Failed to associate images with project');
+              console.error('Error updating reference with images:', error);
+              toast.error('Failed to associate images with reference');
+            } else {
+              console.log('Reference updated with images successfully');
             }
           }
         }
         
+        // Try to extract URLs and add as external references
         const links = values.externalLinks.split(",").map(link => link.trim());
         
         for (const url of links) {
