@@ -202,6 +202,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     }
   };
 
+  // UPDATED uploadImages function with better bucket handling
   const uploadImages = async (userId: string, projectId: string): Promise<string[] | null> => {
     if (selectedFiles.length === 0) return null;
     
@@ -211,41 +212,30 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
     try {
       console.log('Starting image upload process...');
       
-      // Get or create storage bucket
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      // Check if we can access the bucket (don't try to create it - that requires admin rights)
+      const { data: bucketList, error: listError } = await supabase.storage
+        .from('project-images')
+        .list();
       
-      if (bucketsError) {
-        console.error('Error listing buckets:', bucketsError);
-        throw bucketsError;
+      if (listError) {
+        console.error('Error checking bucket access:', listError);
+        toast.error('Unable to access storage. Please check storage permissions.');
+        return null;
       }
       
-      // Check if our bucket exists
-      const bucketExists = buckets?.some(bucket => bucket.name === 'project-images');
+      console.log('Successfully accessed project-images bucket');
       
-      if (!bucketExists) {
-        console.log('Project-images bucket does not exist, creating it...');
-        const { error: createBucketError } = await supabase.storage
-          .createBucket('project-images', {
-            public: true
-          });
-          
-        if (createBucketError) {
-          console.error('Error creating bucket:', createBucketError);
-          throw createBucketError;
-        }
-        
-        console.log('Bucket created successfully');
-      }
-      
-      // Upload each file
+      // Upload each file with a simpler path structure
       for (const file of selectedFiles) {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `${userId}/projects/${projectId}/${fileName}`;
         
-        console.log(`Uploading file: ${fileName} to path: ${filePath}`);
+        // Simplified path - just use the filename directly
+        const filePath = fileName;
         
-        const { error: uploadError, data } = await supabase.storage
+        console.log(`Uploading file: ${fileName}`);
+        
+        const { error: uploadError } = await supabase.storage
           .from('project-images')
           .upload(filePath, file, {
             cacheControl: '3600',
@@ -254,6 +244,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
           
         if (uploadError) {
           console.error('Error uploading image:', uploadError);
+          toast.error(`Failed to upload: ${file.name}`);
           continue;
         }
         
@@ -267,11 +258,16 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         uploadedUrls.push(publicUrl);
       }
       
+      if (uploadedUrls.length === 0) {
+        toast.error('No images were successfully uploaded');
+        return null;
+      }
+      
       console.log('All uploads complete. URLs:', uploadedUrls);
       return uploadedUrls;
     } catch (error) {
       console.error('Error in image upload process:', error);
-      toast.error('Failed to upload some images');
+      toast.error('Failed to upload images');
       return uploadedUrls.length > 0 ? uploadedUrls : null;
     } finally {
       setUploadingImages(false);
