@@ -1,3 +1,4 @@
+// src/context/FontContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Font, Project, FontCategory, ProjectType, FontFormat } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,7 +84,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
-      console.log('Fetched projects:', data);
+      console.log('Fetched projects from database:', data);
 
       if (!data) return;
 
@@ -99,10 +100,14 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         previewImageUrl: project.preview_image_url || null
       }));
 
+      console.log('Transformed projects:', transformedProjects);
+
       const projectsWithPreviewImage = await Promise.all(
         transformedProjects.map(async (project) => {
           if (!project.previewImageUrl && project.images && project.images.length > 0) {
             try {
+              console.log(`Setting preview image for ${project.name} from images array:`, project.images[0]);
+              
               await supabase
                 .from('projects')
                 .update({ preview_image_url: project.images[0] })
@@ -261,6 +266,15 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const userId = session.user.id;
       
+      // Debug what we're inserting
+      console.log('Creating project with data:', {
+        name: project.name,
+        description: project.description,
+        type: project.type,
+        images: project.images,
+        previewImageUrl: project.previewImageUrl
+      });
+      
       const { data, error } = await supabase
         .from('projects')
         .insert({
@@ -273,8 +287,12 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error in supabase insert:', error);
+        throw error;
+      }
       
+      console.log('Project created successfully:', data);
       toast.success('Project created successfully!');
       await fetchProjects();
       
