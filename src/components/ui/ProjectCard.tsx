@@ -3,8 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Project } from '@/types';
 import { Link } from 'react-router-dom';
-import { ImageIcon, Loader2 } from 'lucide-react';
-import { extractOpenGraphImage, extractFirstUrl } from '@/utils/openGraph';
+import { ImageIcon } from 'lucide-react';
 
 interface ProjectCardProps {
   project: Project;
@@ -16,57 +15,31 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    const fetchImage = async () => {
-      setIsLoading(true);
-      setImageError(false);
-      
-      try {
-        // Priority 1: Check if the project has uploaded images
-        if (project.images && project.images.length > 0) {
-          console.log('Using project image:', project.images[0]);
-          setImageUrl(project.images[0]);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Priority 2: Check if the project has a previewImageUrl
-        if (project.previewImageUrl) {
-          console.log('Using preview image URL:', project.previewImageUrl);
-          setImageUrl(project.previewImageUrl);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Priority 3: Extract image from external links in the description
-        if (project.description) {
-          const url = extractFirstUrl(project.description);
-          if (url) {
-            try {
-              const ogImage = await extractOpenGraphImage(url);
-              if (ogImage) {
-                console.log('Using Open Graph image:', ogImage);
-                setImageUrl(ogImage);
-              }
-            } catch (error) {
-              console.error('Error fetching Open Graph image:', error);
-              setImageError(true);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error in fetchImage:', error);
-        setImageError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchImage();
+    // Debug what's coming in
+    console.log('ProjectCard - project data:', project.name, {
+      images: project.images,
+      previewImageUrl: project.previewImageUrl
+    });
+    
+    // Immediately try to use the images
+    if (project.images && project.images.length > 0) {
+      console.log('Using first image from images array:', project.images[0]);
+      setImageUrl(project.images[0]);
+      setIsLoading(false);
+    } else if (project.previewImageUrl) {
+      console.log('Using previewImageUrl:', project.previewImageUrl);
+      setImageUrl(project.previewImageUrl);
+      setIsLoading(false);
+    } else {
+      // No images available
+      console.log('No images available for this project');
+      setIsLoading(false);
+    }
   }, [project]);
 
   // Handle image error
   const handleImageError = () => {
-    console.log('Image failed to load, falling back to placeholder');
+    console.error('Image failed to load:', imageUrl);
     setImageError(true);
     setImageUrl(null);
   };
