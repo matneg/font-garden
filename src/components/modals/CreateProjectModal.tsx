@@ -1,3 +1,4 @@
+
 // src/components/modals/CreateProjectModal.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -10,6 +11,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
