@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Project } from '@/types';
 import { Link } from 'react-router-dom';
-import { ImageIcon } from 'lucide-react';
+import { ImageIcon, Link2Icon } from 'lucide-react';
 import { extractOpenGraphImage, extractFirstUrl } from '@/utils/openGraph';
 
 interface ProjectCardProps {
@@ -78,6 +78,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     setImageUrl(null);
   };
 
+  // Extract URL from description for displaying link icon
+  const hasExternalUrl = React.useMemo(() => {
+    return !!extractFirstUrl(project.description || '');
+  }, [project.description]);
+
   return (
     <Link to={`/projects/${project.id}`}>
       <Card className="h-full card-hover">
@@ -85,7 +90,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
           <CardTitle>{project.name}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-40 mb-4 bg-muted/30 rounded-md overflow-hidden">
+          <div className="h-40 mb-4 bg-muted/30 rounded-md overflow-hidden relative">
             {isLoading ? (
               <div className="w-full h-full flex items-center justify-center bg-muted/50">
                 <div className="animate-pulse w-8 h-8 rounded-full bg-muted"></div>
@@ -100,6 +105,13 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <ImageIcon className="text-muted-foreground/50 w-12 h-12" />
+              </div>
+            )}
+            
+            {/* Show link icon for projects with external URLs */}
+            {hasExternalUrl && (
+              <div className="absolute top-2 right-2 bg-background/80 rounded-full p-1">
+                <Link2Icon className="w-4 h-4 text-primary" />
               </div>
             )}
           </div>

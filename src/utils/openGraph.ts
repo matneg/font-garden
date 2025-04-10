@@ -23,22 +23,51 @@ export async function extractOpenGraphImage(url: string): Promise<string | null>
     
     console.log('Fetching Open Graph image from:', url);
     
-    // Use a CORS proxy for cross-origin requests
-    const corsProxy = 'https://corsproxy.io/?';
-    const response = await fetch(`${corsProxy}${encodeURIComponent(url)}`, {
-      headers: {
-        'Accept': 'text/html',
-        'User-Agent': 'Mozilla/5.0 (compatible; FontGardenBot/1.0)'
-      }
-    });
+    // Try multiple CORS proxies in case one fails
+    const corsProxies = [
+      'https://corsproxy.io/?',
+      'https://api.allorigins.win/raw?url=',
+      'https://cors-anywhere.herokuapp.com/'
+    ];
     
-    if (!response.ok) {
-      console.error(`Failed to fetch URL for Open Graph parsing: ${url}, status: ${response.status}`);
-      return null;
+    // Try each proxy until one works
+    let html = '';
+    let success = false;
+    
+    for (const proxy of corsProxies) {
+      try {
+        const response = await fetch(`${proxy}${encodeURIComponent(url)}`, {
+          headers: {
+            'Accept': 'text/html',
+            'User-Agent': 'Mozilla/5.0 (compatible; FontGardenBot/1.0)'
+          },
+          // Set a reasonable timeout to avoid hanging requests
+          signal: AbortSignal.timeout(10000)
+        });
+        
+        if (response.ok) {
+          html = await response.text();
+          console.log(`Received HTML response (${html.length} bytes) from proxy: ${proxy}`);
+          success = true;
+          break;
+        } else {
+          console.warn(`Proxy ${proxy} failed with status: ${response.status}`);
+        }
+      } catch (error) {
+        console.warn(`Error with proxy ${proxy}:`, error);
+        // Continue to next proxy
+      }
     }
     
-    const html = await response.text();
-    console.log(`Received HTML response (${html.length} bytes)`);
+    if (!success || !html) {
+      console.error('All proxies failed to fetch URL:', url);
+      
+      // Fallback: try a social media image service
+      // Many services provide preview images for websites
+      const imageServiceUrl = `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(url)}&size=128`;
+      console.log('Trying favicon service fallback:', imageServiceUrl);
+      return imageServiceUrl;
+    }
     
     // Extract og:image using regex - more reliable approach with proper attribute handling
     const ogImageMatch = html.match(/<meta[^>]*(?:property|name)=["']og:image["'][^>]*content=["']([^"']*)["'][^>]*>/i) ||
@@ -51,14 +80,14 @@ export async function extractOpenGraphImage(url: string): Promise<string | null>
     
     // Fallback to looking for Twitter image
     const twitterImageMatch = html.match(/<meta[^>]*(?:name|property)=["']twitter:image["'][^>]*content=["']([^"']*)["'][^>]*>/i) ||
-                              html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*(?:name|property)=["']twitter:image["'][^>]*>/i);
+                             html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*(?:name|property)=["']twitter:image["'][^>]*>/i);
     
     if (twitterImageMatch && twitterImageMatch[1]) {
       console.log('Found twitter:image:', twitterImageMatch[1]);
       return twitterImageMatch[1];
     }
     
-    // Second fallback: look for the first image in the HTML
+    // Look for the first image in the HTML
     const imgMatch = html.match(/<img[^>]*src=["']([^"']*\.(?:jpg|jpeg|png|gif|webp))["'][^>]*>/i);
     if (imgMatch && imgMatch[1]) {
       // Handle relative URLs
@@ -75,11 +104,17 @@ export async function extractOpenGraphImage(url: string): Promise<string | null>
       return imgUrl;
     }
     
-    console.log('No images found in the HTML');
-    return null;
+    // Final fallback: Use a website preview service
+    const fallbackImageUrl = `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(url)}&size=128`;
+    console.log('Using favicon fallback:', fallbackImageUrl);
+    return fallbackImageUrl;
+    
   } catch (error) {
     console.error('Error extracting Open Graph image:', error);
-    return null;
+    // Last resort fallback - use the Google favicon service
+    const fallbackImageUrl = `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(url)}&size=128`;
+    console.log('Using favicon fallback after error:', fallbackImageUrl);
+    return fallbackImageUrl;
   }
 }
 
