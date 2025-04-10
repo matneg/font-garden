@@ -87,7 +87,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         <CardHeader>
           <div className="flex justify-between items-start">
             <CardTitle>{project.name}</CardTitle>
-            {projectType === 'personal' ? <Badge variant="outline" className="bg-[#1EAEDB] text-white border border-white">
+            {projectType === 'personal' ? <Badge variant="outline" className="text-blue-600 bg-blue-100">
                 Personal
               </Badge> : <Badge variant="secondary" className="text-slate-600 bg-slate-200">
                 Reference
