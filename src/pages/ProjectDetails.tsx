@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFontContext } from '@/context/FontContext';
 import { Button } from '@/components/ui/button';
@@ -26,25 +26,25 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import AddFontToProjectModal from '@/components/modals/AddFontToProjectModal';
+import EditProjectModal from '@/components/modals/EditProjectModal';
 
 const ProjectDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getProjectById, fonts, deleteProject, addFontToProject, removeFontFromProject } = useFontContext();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [project, setProject] = useState(getProjectById(id || ''));
   
-  // Get the project using the id from URL params
-  const project = getProjectById(id || '');
+  // Refresh project when id changes
+  useEffect(() => {
+    setProject(getProjectById(id || ''));
+  }, [id, getProjectById]);
   
   // Get all fonts associated with this project
   const projectFonts = project ? fonts.filter(font => {
     // In a real implementation, this would use font_projects relation
     return font.projectCount && font.projectCount > 0;
   }).slice(0, project?.fontCount || 0) : []; // This is just a placeholder until we implement the real relation
-  
-  const handleEdit = () => {
-    toast.info('Edit functionality will be implemented soon');
-  };
   
   const handleDelete = async () => {
     if (!project) return;
@@ -99,10 +99,15 @@ const ProjectDetails = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleEdit}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
+          <EditProjectModal 
+            project={project} 
+            onSuccess={() => setProject(getProjectById(id || ''))}
+          >
+            <Button variant="outline">
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+          </EditProjectModal>
           <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}>
             <Trash2 className="h-4 w-4 mr-2" />
             Delete

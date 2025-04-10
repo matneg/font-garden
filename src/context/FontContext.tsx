@@ -24,6 +24,7 @@ interface FontContextType {
   getProjectById: (id: string) => Project | undefined;
   addFont: (font: Omit<Font, 'id' | 'createdAt' | 'updatedAt' | 'projectCount'>) => Promise<boolean | undefined>;
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt' | 'fontCount'>) => Promise<{ id: string } | undefined>;
+  updateProject: (project: Project) => Promise<void>;
   addFontToProject: (fontId: string, projectId: string) => Promise<void>;
   removeFontFromProject: (fontId: string, projectId: string) => Promise<void>;
   deleteFont: (id: string) => Promise<void>;
@@ -154,6 +155,43 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       console.error('Error fetching projects:', err);
       setError('Failed to load projects');
+    }
+  };
+
+  const updateProject = async (project: Project) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('You must be logged in to update a project');
+        return;
+      }
+      
+      const updateData = {
+        name: project.name,
+        description: project.description,
+        type: project.type || 'personal',
+        preview_image_url: project.previewImageUrl
+      };
+      
+      console.log('Updating project with data:', updateData);
+      
+      const { data, error } = await supabase
+        .from('projects')
+        .update(updateData)
+        .eq('id', project.id)
+        .select();
+
+      if (error) {
+        console.error('Error in supabase update:', error);
+        throw error;
+      }
+      
+      console.log('Project updated successfully:', data);
+      await fetchProjects();
+    } catch (err) {
+      console.error('Error updating project:', err);
+      toast.error('Failed to update project');
     }
   };
 
@@ -451,6 +489,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getProjectById,
         addFont,
         addProject,
+        updateProject,
         addFontToProject,
         removeFontFromProject,
         deleteFont,
