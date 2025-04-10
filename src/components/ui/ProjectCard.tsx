@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Project } from '@/types';
@@ -6,28 +5,27 @@ import { Link } from 'react-router-dom';
 import { ImageIcon, Link2Icon } from 'lucide-react';
 import { extractOpenGraphImage, extractFirstUrl } from '@/utils/openGraph';
 import { Badge } from '@/components/ui/badge';
-
 interface ProjectCardProps {
   project: Project;
 }
-
-const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({
+  project
+}) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
-
   useEffect(() => {
     const fetchImageForProject = async () => {
       setIsLoading(true);
       setImageError(false);
-      
+
       // Debug what's coming in
       console.log('ProjectCard - project data:', project.name, {
         images: project.images,
         previewImageUrl: project.previewImageUrl,
         description: project.description
       });
-      
+
       // Try to use the images in priority order
       if (project.images && project.images.length > 0) {
         console.log('Using first image from images array:', project.images[0]);
@@ -67,7 +65,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
         setIsLoading(false);
       }
     };
-
     fetchImageForProject();
   }, [project]);
 
@@ -85,71 +82,40 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
   // Determine project type - default to 'personal' if not specified
   const projectType = project.type || 'personal';
-
-  return (
-    <Link to={`/projects/${project.id}`}>
+  return <Link to={`/projects/${project.id}`}>
       <Card className="h-full card-hover">
         <CardHeader>
           <div className="flex justify-between items-start">
             <CardTitle>{project.name}</CardTitle>
-            {projectType === 'personal' ? (
-              <Badge 
-                variant="outline" 
-                className="bg-[#1EAEDB] text-white border border-white"
-              >
+            {projectType === 'personal' ? <Badge variant="outline" className="bg-[#1EAEDB] text-white border border-white">
                 Personal
-              </Badge>
-            ) : (
-              <Badge 
-                variant="secondary" 
-                className="bg-[#8E9196] text-white"
-              >
+              </Badge> : <Badge variant="secondary" className="text-white bg-slate-200">
                 Reference
-              </Badge>
-            )}
+              </Badge>}
           </div>
         </CardHeader>
         <CardContent>
           <div className="h-40 mb-4 bg-muted/30 rounded-md overflow-hidden relative">
-            {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center bg-muted/50">
+            {isLoading ? <div className="w-full h-full flex items-center justify-center bg-muted/50">
                 <div className="animate-pulse w-8 h-8 rounded-full bg-muted"></div>
-              </div>
-            ) : imageUrl && !imageError ? (
-              <img 
-                src={imageUrl} 
-                alt={`${project.name} preview`} 
-                className="w-full h-full object-cover"
-                onError={handleImageError}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
+              </div> : imageUrl && !imageError ? <img src={imageUrl} alt={`${project.name} preview`} className="w-full h-full object-cover" onError={handleImageError} /> : <div className="w-full h-full flex items-center justify-center">
                 <ImageIcon className="text-muted-foreground/50 w-12 h-12" />
-              </div>
-            )}
+              </div>}
             
             {/* Show link icon for projects with external URLs */}
-            {hasExternalUrl && (
-              <div className="absolute top-2 right-2 bg-background/80 rounded-full p-1">
+            {hasExternalUrl && <div className="absolute top-2 right-2 bg-background/80 rounded-full p-1">
                 <Link2Icon className="w-4 h-4 text-primary" />
-              </div>
-            )}
+              </div>}
           </div>
           
-          {project.description && (
-            <p className="text-sm text-muted-foreground line-clamp-3">
+          {project.description && <p className="text-sm text-muted-foreground line-clamp-3">
               {project.description}
-            </p>
-          )}
+            </p>}
         </CardContent>
         <CardFooter className="text-xs text-muted-foreground border-t pt-3">
-          {project.fontCount === 0 
-            ? 'No fonts assigned' 
-            : `${project.fontCount} ${project.fontCount === 1 ? 'font' : 'fonts'} assigned`}
+          {project.fontCount === 0 ? 'No fonts assigned' : `${project.fontCount} ${project.fontCount === 1 ? 'font' : 'fonts'} assigned`}
         </CardFooter>
       </Card>
-    </Link>
-  );
+    </Link>;
 };
-
 export default ProjectCard;
