@@ -89,7 +89,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             <CardTitle>{project.name}</CardTitle>
             {projectType === 'personal' ? <Badge variant="outline" className="bg-[#1EAEDB] text-white border border-white">
                 Personal
-              </Badge> : <Badge variant="secondary" className="text-white bg-slate-200">
+              </Badge> : <Badge variant="secondary" className="text-slate-600 bg-slate-200">
                 Reference
               </Badge>}
           </div>
