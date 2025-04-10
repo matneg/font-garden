@@ -1,11 +1,11 @@
 
-// src/components/ui/ProjectCard.tsx
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Project } from '@/types';
 import { Link } from 'react-router-dom';
 import { ImageIcon, Link2Icon } from 'lucide-react';
 import { extractOpenGraphImage, extractFirstUrl } from '@/utils/openGraph';
+import { Badge } from '@/components/ui/badge';
 
 interface ProjectCardProps {
   project: Project;
@@ -83,11 +83,31 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     return !!extractFirstUrl(project.description || '');
   }, [project.description]);
 
+  // Determine project type - default to 'personal' if not specified
+  const projectType = project.type || 'personal';
+
   return (
     <Link to={`/projects/${project.id}`}>
       <Card className="h-full card-hover">
         <CardHeader>
-          <CardTitle>{project.name}</CardTitle>
+          <div className="flex justify-between items-start">
+            <CardTitle>{project.name}</CardTitle>
+            {projectType === 'personal' ? (
+              <Badge 
+                variant="outline" 
+                className="bg-[#1EAEDB] text-white border border-white"
+              >
+                Personal
+              </Badge>
+            ) : (
+              <Badge 
+                variant="secondary" 
+                className="bg-[#8E9196] text-white"
+              >
+                Reference
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="h-40 mb-4 bg-muted/30 rounded-md overflow-hidden relative">
