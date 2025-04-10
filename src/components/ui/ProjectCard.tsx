@@ -1,9 +1,11 @@
+
 // src/components/ui/ProjectCard.tsx
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Project } from '@/types';
 import { Link } from 'react-router-dom';
 import { ImageIcon } from 'lucide-react';
+import { extractOpenGraphImage, extractFirstUrl } from '@/utils/openGraph';
 
 interface ProjectCardProps {
   project: Project;
@@ -15,26 +17,58 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    // Debug what's coming in
-    console.log('ProjectCard - project data:', project.name, {
-      images: project.images,
-      previewImageUrl: project.previewImageUrl
-    });
-    
-    // Immediately try to use the images
-    if (project.images && project.images.length > 0) {
-      console.log('Using first image from images array:', project.images[0]);
-      setImageUrl(project.images[0]);
-      setIsLoading(false);
-    } else if (project.previewImageUrl) {
-      console.log('Using previewImageUrl:', project.previewImageUrl);
-      setImageUrl(project.previewImageUrl);
-      setIsLoading(false);
-    } else {
-      // No images available
-      console.log('No images available for this project');
-      setIsLoading(false);
-    }
+    const fetchImageForProject = async () => {
+      setIsLoading(true);
+      setImageError(false);
+      
+      // Debug what's coming in
+      console.log('ProjectCard - project data:', project.name, {
+        images: project.images,
+        previewImageUrl: project.previewImageUrl,
+        description: project.description
+      });
+      
+      // Try to use the images in priority order
+      if (project.images && project.images.length > 0) {
+        console.log('Using first image from images array:', project.images[0]);
+        setImageUrl(project.images[0]);
+        setIsLoading(false);
+      } else if (project.previewImageUrl) {
+        console.log('Using previewImageUrl:', project.previewImageUrl);
+        setImageUrl(project.previewImageUrl);
+        setIsLoading(false);
+      } else if (project.description) {
+        // Try to extract a URL from the project description and fetch its Open Graph image
+        const url = extractFirstUrl(project.description);
+        if (url) {
+          console.log('Trying to fetch Open Graph image from URL in description:', url);
+          try {
+            const ogImage = await extractOpenGraphImage(url);
+            if (ogImage) {
+              console.log('Successfully extracted Open Graph image:', ogImage);
+              setImageUrl(ogImage);
+            } else {
+              console.log('No Open Graph image found');
+              setImageUrl(null);
+            }
+          } catch (error) {
+            console.error('Error fetching Open Graph image:', error);
+            setImageUrl(null);
+          }
+        } else {
+          console.log('No URL found in description');
+          setImageUrl(null);
+        }
+        setIsLoading(false);
+      } else {
+        // No images available
+        console.log('No images available for this project');
+        setImageUrl(null);
+        setIsLoading(false);
+      }
+    };
+
+    fetchImageForProject();
   }, [project]);
 
   // Handle image error

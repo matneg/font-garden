@@ -125,9 +125,12 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (!project.previewImageUrl && project.description) {
             const url = extractFirstUrl(project.description);
             if (url) {
+              console.log(`Trying to extract Open Graph image from URL for ${project.name}:`, url);
               try {
                 const ogImage = await extractOpenGraphImage(url);
                 if (ogImage) {
+                  console.log(`Successfully extracted Open Graph image for ${project.name}:`, ogImage);
+                  
                   await supabase
                     .from('projects')
                     .update({ preview_image_url: ogImage })
@@ -266,13 +269,30 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       const userId = session.user.id;
       
-      // Debug what we're inserting
+      let previewImageUrl = project.previewImageUrl;
+      
+      if (!previewImageUrl && !project.images?.length && project.description) {
+        const url = extractFirstUrl(project.description);
+        if (url) {
+          console.log('Trying to extract Open Graph image from URL in new project:', url);
+          try {
+            const ogImage = await extractOpenGraphImage(url);
+            if (ogImage) {
+              console.log('Successfully extracted Open Graph image for new project:', ogImage);
+              previewImageUrl = ogImage;
+            }
+          } catch (error) {
+            console.error('Error fetching Open Graph image for new project:', error);
+          }
+        }
+      }
+      
       console.log('Creating project with data:', {
         name: project.name,
         description: project.description,
         type: project.type,
         images: project.images,
-        previewImageUrl: project.previewImageUrl
+        previewImageUrl: previewImageUrl
       });
       
       const { data, error } = await supabase
@@ -283,7 +303,7 @@ export const FontProvider: React.FC<{ children: React.ReactNode }> = ({ children
           type: project.type || 'personal',
           user_id: userId,
           images: project.images || [],
-          preview_image_url: project.previewImageUrl
+          preview_image_url: previewImageUrl
         })
         .select();
 
