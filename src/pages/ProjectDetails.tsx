@@ -16,7 +16,6 @@ import {
   ExternalLink,
   Calendar,
   Clock,
-  FileText,
   Image
 } from 'lucide-react';
 import FontCard from '@/components/ui/FontCard';
@@ -135,70 +134,62 @@ const ProjectDetails = () => {
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 gap-8">
             {/* Top row with fields */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Field</h3>
-                <div className="flex flex-col gap-2">
-                  <p className="font-medium">{field}</p>
-                  <Badge 
-                    variant="outline"
-                    className={cn(
-                      "text-sm py-1 px-4 rounded-full font-medium inline-flex w-fit",
-                      project.type === 'personal' 
-                        ? "border border-blue-300 bg-blue-50 text-blue-700" 
-                        : "border border-gray-300 bg-gray-100 text-gray-600"
-                    )}
-                  >
-                    {project.type === 'personal' ? 'Personal Project' : 'Reference'}
-                  </Badge>
+            <div className="grid grid-cols-4 md:grid-cols-4 gap-6">
+              <div className="flex flex-col gap-2">
+                <Badge 
+                  variant="outline"
+                  className={cn(
+                    "text-sm py-1.5 px-4 rounded-full font-medium inline-flex w-fit",
+                    project.type === 'personal' 
+                      ? "border border-blue-300 bg-blue-50 text-blue-700" 
+                      : "border border-gray-300 bg-gray-100 text-gray-600"
+                  )}
+                >
+                  {project.type === 'personal' ? 'Personal Project' : 'Reference'}
+                </Badge>
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mt-3 mb-1">Field</h3>
+                  <p className="font-medium text-green-500">{field}</p>
                 </div>
               </div>
+              
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Authors</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Authors</h3>
                 <p className="font-medium">{project.name.split(' ')[0] || 'User'}</p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Created</h3>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <p>{new Date(project.createdAt).toLocaleDateString()}</p>
-                  </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Created</h3>
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <p>{new Date(project.createdAt).toLocaleDateString()}</p>
                 </div>
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Last Updated</h3>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <p>{new Date(project.updatedAt).toLocaleDateString()}</p>
-                  </div>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Last Updated</h3>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <p>{new Date(project.updatedAt).toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
             
             {/* Link section */}
-            {(projectUrl || project.description) && (
+            {projectUrl && (
               <>
                 <Separator />
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                    {projectUrl ? 'Link' : 'Description'}
-                  </h3>
-                  {projectUrl ? (
-                    <a 
-                      href={projectUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-primary hover:underline px-4 py-2 border rounded-md"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      {projectUrl}
-                    </a>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-                      <p className="text-muted-foreground">{project.description}</p>
-                    </div>
-                  )}
+                  <h3 className="text-sm font-medium text-muted-foreground mb-3">Link</h3>
+                  <a 
+                    href={projectUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-primary hover:underline px-4 py-2 border rounded-md"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    {projectUrl}
+                  </a>
                 </div>
               </>
             )}
