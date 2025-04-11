@@ -25,6 +25,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
   const [suggestions, setSuggestions] = useState<FontPairingSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasGenerated, setHasGenerated] = useState(false);
   const { user } = useAuth();
 
   async function fetchFontPairings(fontName: string, fontCategory: string): Promise<FontPairingSuggestion[]> {
@@ -50,7 +51,9 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
           "Content-Type": "application/json",
           "Authorization": `Bearer ${API_KEY}`,
           "HTTP-Referer": window.location.origin,
-          "X-Title": "Type Garden Font Pairing"
+          "X-Title": "Type Garden Font Pairing",
+          "OR-SITE-URL": window.location.origin,
+          "OR-APP-NAME": "TypeGarden"
         },
         body: JSON.stringify({
           model: "nvidia/llama-3.1-nemotron-nano-8b-v1:free",
@@ -67,11 +70,15 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
                 ...
               ]`
             }
-          ]
+          ],
+          "max_tokens": 500
         })
       });
       
       if (!response.ok) {
+        if (response.status === 402) {
+          throw new Error('OpenRouter API credits depleted or payment required. Please check your OpenRouter account.');
+        }
         throw new Error(`API request failed: ${response.status}`);
       }
       
@@ -104,6 +111,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
       
       const pairings = await fetchFontPairings(font.name, font.category);
       setSuggestions(pairings);
+      setHasGenerated(true);
       
       // Preload the suggested fonts
       pairings.forEach(pair => {
@@ -120,14 +128,8 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
     }
   };
 
-  // Load suggestions when the component mounts and user is authenticated
-  useEffect(() => {
-    if (font && user) {
-      handleFetchSuggestions();
-    } else if (!user) {
-      setError('Please sign in to view font pairing suggestions.');
-    }
-  }, [font.id, user]);
+  // We've removed the useEffect hook that automatically fetched suggestions
+  // Now suggestions will only be generated when the user clicks the button
 
   // Get the current font style
   const currentFontStyle = getFontStyle(font);
@@ -151,7 +153,9 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
   };
 
   useEffect(() => {
-    checkApiKeysTable();
+    if (user) {
+      checkApiKeysTable();
+    }
   }, [user]);
 
   return (
@@ -171,7 +175,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
               className="gap-2"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              {loading ? 'Generating...' : 'Refresh'}
+              {loading ? 'Generating...' : hasGenerated ? 'Refresh Suggestions' : 'Generate Suggestions'}
             </Button>
           )}
         </CardTitle>
@@ -194,6 +198,18 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
             <p className="text-destructive">{error}</p>
             <Button onClick={handleFetchSuggestions} variant="outline" size="sm">
               Try Again
+            </Button>
+          </div>
+        ) : !hasGenerated ? (
+          <div className="text-center py-12">
+            <div className="flex justify-center mb-4 text-muted-foreground/40">
+              <Sparkles className="h-16 w-16" />
+            </div>
+            <p className="text-muted-foreground mb-4">Discover perfect font pairings for your designs</p>
+            <p className="text-sm text-muted-foreground/70 mb-6">Click "Generate Suggestions" to get AI-powered recommendations</p>
+            <Button onClick={handleFetchSuggestions} className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Generate Suggestions
             </Button>
           </div>
         ) : suggestions.length === 0 ? (
