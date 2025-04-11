@@ -16,7 +16,8 @@ import {
   ExternalLink,
   Calendar,
   Clock,
-  FileText
+  FileText,
+  Image
 } from 'lucide-react';
 import FontCard from '@/components/ui/FontCard';
 import { toast } from 'sonner';
@@ -83,6 +84,10 @@ const ProjectDetails = () => {
       </div>
     );
   }
+
+  // Extract field from description - default to project name if not found
+  const fieldMatch = project.description?.match(/Field:\s*([^\n]+)/);
+  const field = fieldMatch ? fieldMatch[1].trim() : project.name.split(' ')[0];
   
   return (
     <div className="container mx-auto px-4 py-8 page-transition">
@@ -130,26 +135,29 @@ const ProjectDetails = () => {
         <CardContent className="pt-6">
           <div className="grid grid-cols-1 gap-8">
             {/* Top row with fields */}
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Field</h3>
-                <Badge 
-                  variant={project.type === 'personal' ? 'outline' : 'secondary'}
-                  className={cn(
-                    "text-sm py-1 px-4 rounded-full font-medium",
-                    project.type === 'personal' 
-                      ? "border border-blue-300 bg-blue-50 text-blue-700" 
-                      : "bg-gray-100 text-gray-600"
-                  )}
-                >
-                  {project.type === 'personal' ? 'Personal Project' : 'Reference'}
-                </Badge>
+                <div className="flex flex-col gap-2">
+                  <p className="font-medium">{field}</p>
+                  <Badge 
+                    variant="outline"
+                    className={cn(
+                      "text-sm py-1 px-4 rounded-full font-medium inline-flex w-fit",
+                      project.type === 'personal' 
+                        ? "border border-blue-300 bg-blue-50 text-blue-700" 
+                        : "border border-gray-300 bg-gray-100 text-gray-600"
+                    )}
+                  >
+                    {project.type === 'personal' ? 'Personal Project' : 'Reference'}
+                  </Badge>
+                </div>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-2">Authors</h3>
                 <p className="font-medium">{project.name.split(' ')[0] || 'User'}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-2">Created</h3>
                   <div className="flex items-center gap-1">
@@ -196,13 +204,13 @@ const ProjectDetails = () => {
             )}
             
             {/* Images section */}
-            {project.images && project.images.length > 0 && (
+            {((project.images && project.images.length > 0) || project.previewImageUrl) && (
               <>
                 <Separator />
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-3">Images:</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {project.images.map((image, index) => (
+                    {project.images && project.images.map((image, index) => (
                       <div key={index} className="relative aspect-video rounded-md overflow-hidden border">
                         <img 
                           src={image} 
@@ -211,6 +219,15 @@ const ProjectDetails = () => {
                         />
                       </div>
                     ))}
+                    {project.previewImageUrl && !project.images?.includes(project.previewImageUrl) && (
+                      <div className="relative aspect-video rounded-md overflow-hidden border">
+                        <img 
+                          src={project.previewImageUrl} 
+                          alt={`Project ${project.name} preview`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
