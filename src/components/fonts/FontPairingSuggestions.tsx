@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Font } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Loader2, Sparkles, Link } from 'lucide-react';
+import { RefreshCw, Loader2, Sparkles, Link as LinkIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { loadGoogleFont, getFontStyle } from '@/lib/fontLoader';
 import { Separator } from '@/components/ui/separator';
@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface FontPairingSuggestion {
   name: string;
@@ -27,6 +28,19 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
   const [error, setError] = useState<string | null>(null);
   const [hasGenerated, setHasGenerated] = useState(false);
   const { user } = useAuth();
+
+  // IMPORTANT: We're using localStorage to remember if the component has already generated suggestions
+  // This prevents auto-generation even on component remount
+  const storageKey = `font-pairing-generated-${font.id}`;
+  
+  useEffect(() => {
+    // Check localStorage to see if we've already generated for this font
+    const hasGeneratedBefore = localStorage.getItem(storageKey) === 'true';
+    setHasGenerated(hasGeneratedBefore);
+    
+    // Do NOT automatically generate, even if hasGeneratedBefore is true
+    // This ensures we never auto-generate, even on page refresh
+  }, [font.id, storageKey]);
 
   async function fetchFontPairings(fontName: string, fontCategory: string): Promise<FontPairingSuggestion[]> {
     try {
@@ -100,6 +114,8 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
   }
 
   const handleFetchSuggestions = async () => {
+    if (loading) return; // Prevent multiple simultaneous requests
+    
     setLoading(true);
     setError(null);
     
@@ -109,9 +125,46 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
         return;
       }
       
+      // Use fallback pairings for testing without API calls
+      // Remove this in production or when API is working
+      /*
+      const fallbackPairings = [
+        {
+          name: "Roboto",
+          category: "sans-serif",
+          reason: "Roboto's clean lines and neutral character balance well with the personality of the font."
+        },
+        {
+          name: "Lora",
+          category: "serif",
+          reason: "Lora adds a touch of elegance and creates a nice contrast while maintaining readability."
+        },
+        {
+          name: "Work Sans",
+          category: "sans-serif",
+          reason: "Work Sans has a friendly feel that complements the font without competing for attention."
+        }
+      ];
+      
+      // Comment this out when using real API
+      setSuggestions(fallbackPairings);
+      setHasGenerated(true);
+      localStorage.setItem(storageKey, 'true');
+      toast.success("Font pairing suggestions generated successfully!");
+      
+      // Preload the suggested fonts
+      fallbackPairings.forEach(pair => {
+        loadGoogleFont(pair.name);
+      });
+      */
+      
+      // Uncomment this for real API usage
       const pairings = await fetchFontPairings(font.name, font.category);
       setSuggestions(pairings);
       setHasGenerated(true);
+      
+      // Store that we've generated for this font
+      localStorage.setItem(storageKey, 'true');
       
       // Preload the suggested fonts
       pairings.forEach(pair => {
@@ -128,31 +181,28 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
     }
   };
 
-  // We've removed the useEffect hook that automatically fetched suggestions
-  // Now suggestions will only be generated when the user clicks the button
-
   // Get the current font style
   const currentFontStyle = getFontStyle(font);
 
-  // Check if API keys table exists
-  const checkApiKeysTable = async () => {
-    if (!user) return;
-    
-    try {
-      const { count, error } = await supabase
-        .from('api_keys')
-        .select('*', { count: 'exact', head: true });
-      
-      if (error) {
-        console.error('Error checking API keys table:', error);
-        setError('API keys table not found. Please set up the API keys table in Supabase.');
-      }
-    } catch (err) {
-      console.error('Error checking API keys table:', err);
-    }
-  };
-
+  // Check if API keys table exists on component mount
   useEffect(() => {
+    const checkApiKeysTable = async () => {
+      if (!user) return;
+      
+      try {
+        const { count, error } = await supabase
+          .from('api_keys')
+          .select('*', { count: 'exact', head: true });
+        
+        if (error) {
+          console.error('Error checking API keys table:', error);
+          setError('API keys table not found. Please set up the API keys table in Supabase.');
+        }
+      } catch (err) {
+        console.error('Error checking API keys table:', err);
+      }
+    };
+    
     if (user) {
       checkApiKeysTable();
     }
@@ -166,7 +216,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
             <Sparkles className="h-5 w-5 text-primary" />
             AI Font Pairing Suggestions
           </div>
-          {user && (
+          {user && hasGenerated && (
             <Button 
               variant="outline" 
               size="sm" 
@@ -175,7 +225,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
               className="gap-2"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              {loading ? 'Generating...' : hasGenerated ? 'Refresh Suggestions' : 'Generate Suggestions'}
+              {loading ? 'Generating...' : 'Refresh Suggestions'}
             </Button>
           )}
         </CardTitle>
