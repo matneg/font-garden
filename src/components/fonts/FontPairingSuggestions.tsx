@@ -1,15 +1,21 @@
-// src/components/fonts/FontPairingSuggestions.tsx
 import React, { useState, useEffect } from 'react';
 import { Font } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Loader2, Sparkles } from 'lucide-react';
-import { fetchFontPairings, FontPairingSuggestion } from '@/lib/openrouter';
+import { RefreshCw, Loader2, Sparkles, Link } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { loadGoogleFont, getFontStyle } from '@/lib/fontLoader';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+
+interface FontPairingSuggestion {
+  name: string;
+  category: string;
+  reason: string;
+}
 
 interface FontPairingSuggestionsProps {
   font: Font;
@@ -19,12 +25,83 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
   const [suggestions, setSuggestions] = useState<FontPairingSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+
+  async function fetchFontPairings(fontName: string, fontCategory: string): Promise<FontPairingSuggestion[]> {
+    try {
+      // Fetch API key from Supabase
+      const { data: keyData, error: keyError } = await supabase
+        .from('api_keys')
+        .select('key_value')
+        .eq('name', 'openrouter')
+        .single();
+      
+      if (keyError || !keyData) {
+        console.error('Error fetching API key:', keyError);
+        throw new Error('Unable to access OpenRouter API key');
+      }
+      
+      const API_KEY = keyData.key_value;
+      const API_URL = "https://openrouter.ai/api/v1/chat/completions";
+      
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${API_KEY}`,
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "Type Garden Font Pairing"
+        },
+        body: JSON.stringify({
+          model: "anthropic/claude-3-haiku",
+          messages: [
+            {
+              role: "user",
+              content: `You are a typography expert. Suggest 3 Google Font pairings for a ${fontCategory} font named "${fontName}". For each suggestion, explain why it pairs well. Respond in JSON format like this:
+              [
+                {
+                  "name": "Font Name",
+                  "category": "sans-serif/serif/display/etc",
+                  "reason": "Brief explanation why this pairs well"
+                },
+                ...
+              ]`
+            }
+          ]
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Parse the JSON from the response content
+      const content = data.choices[0].message.content;
+      try {
+        const pairingSuggestions = JSON.parse(content);
+        return pairingSuggestions;
+      } catch (error) {
+        console.error("Failed to parse font pairings JSON:", error);
+        return [];
+      }
+    } catch (error) {
+      console.error("Error fetching font pairings:", error);
+      throw error;
+    }
+  }
 
   const handleFetchSuggestions = async () => {
     setLoading(true);
     setError(null);
     
     try {
+      if (!user) {
+        setError('Please sign in to view font pairing suggestions.');
+        return;
+      }
+      
       const pairings = await fetchFontPairings(font.name, font.category);
       setSuggestions(pairings);
       
@@ -34,24 +111,48 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
       });
       
       toast.success("Font pairing suggestions generated successfully!");
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching font pairings:', err);
-      setError('Failed to fetch font pairing suggestions.');
+      setError(err.message || 'Failed to fetch font pairing suggestions.');
       toast.error("Failed to generate font pairings");
     } finally {
       setLoading(false);
     }
   };
 
-  // Load suggestions when the component mounts
+  // Load suggestions when the component mounts and user is authenticated
   useEffect(() => {
-    if (font) {
+    if (font && user) {
       handleFetchSuggestions();
+    } else if (!user) {
+      setError('Please sign in to view font pairing suggestions.');
     }
-  }, [font.id]);
+  }, [font.id, user]);
 
   // Get the current font style
   const currentFontStyle = getFontStyle(font);
+
+  // Check if API keys table exists
+  const checkApiKeysTable = async () => {
+    if (!user) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('api_keys')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        console.error('Error checking API keys table:', error);
+        setError('API keys table not found. Please set up the API keys table in Supabase.');
+      }
+    } catch (err) {
+      console.error('Error checking API keys table:', err);
+    }
+  };
+
+  useEffect(() => {
+    checkApiKeysTable();
+  }, [user]);
 
   return (
     <Card className="mb-10">
@@ -61,16 +162,18 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
             <Sparkles className="h-5 w-5 text-primary" />
             AI Font Pairing Suggestions
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleFetchSuggestions}
-            disabled={loading}
-            className="gap-2"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            {loading ? 'Generating...' : 'Refresh'}
-          </Button>
+          {user && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleFetchSuggestions}
+              disabled={loading}
+              className="gap-2"
+            >
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {loading ? 'Generating...' : 'Refresh'}
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -78,6 +181,13 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">Asking AI for the best font pairings...</p>
+          </div>
+        ) : !user ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">Sign in to see AI font pairing suggestions</p>
+            <Button asChild variant="outline">
+              <Link to="/auth/signin">Sign In</Link>
+            </Button>
           </div>
         ) : error ? (
           <div className="text-center py-8 space-y-4">
