@@ -1,4 +1,6 @@
 // src/lib/openrouter.ts
+import { supabase } from '@/integrations/supabase/client';
+
 export interface FontPairingSuggestion {
   name: string;
   category: string;
@@ -9,20 +11,32 @@ export async function fetchFontPairings(
   fontName: string, 
   fontCategory: string
 ): Promise<FontPairingSuggestion[]> {
-  const API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-  const API_URL = "https://openrouter.ai/api/v1/chat/completions";
-  
   try {
+    // Fetch API key from Supabase
+    const { data: keyData, error: keyError } = await supabase
+      .from('api_keys')
+      .select('key_value')
+      .eq('name', 'openrouter')
+      .single();
+    
+    if (keyError || !keyData) {
+      console.error('Error fetching API key:', keyError);
+      throw new Error('Unable to access OpenRouter API key');
+    }
+    
+    const API_KEY = keyData.key_value;
+    const API_URL = "https://openrouter.ai/api/v1/chat/completions";
+    
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${API_KEY}`,
-        "HTTP-Referer": window.location.origin, // Required by OpenRouter
+        "HTTP-Referer": window.location.origin,
         "X-Title": "Type Garden Font Pairing"
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3-haiku", // You can choose a different model
+        model: "anthropic/claude-3-haiku",
         messages: [
           {
             role: "user",
