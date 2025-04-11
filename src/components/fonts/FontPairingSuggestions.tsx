@@ -53,7 +53,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
           "X-Title": "Type Garden Font Pairing"
         },
         body: JSON.stringify({
-          model: "anthropic/claude-3-haiku",
+          model: "nvidia/llama-3.1-nemotron-nano-8b-v1:free",
           messages: [
             {
               role: "user",
