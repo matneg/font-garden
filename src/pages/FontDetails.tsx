@@ -44,9 +44,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { loadGoogleFont, loadCustomFont, getFontStyle } from '@/lib/fontLoader';
+import FontPairingSuggestions from '@/components/fonts/FontPairingSuggestions';
 
 const FontDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string; }>();
   const { getFontById, projects, deleteFont } = useFontContext();
   const navigate = useNavigate();
   
@@ -292,6 +293,9 @@ const FontDetails = () => {
               </CardContent>
             </Card>
           )}
+          
+          {/* Font Pairing Suggestions Section */}
+          <FontPairingSuggestions font={font} />
         </div>
         
         <div className="space-y-8">
