@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFontContext } from '@/context/FontContext';
@@ -5,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Pencil, Trash2, Plus, FolderKanban, BookOpen, ExternalLink, Calendar, Clock, Image } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Plus, FolderKanban, BookOpen, ExternalLink, Calendar, Clock, Maximize2 } from 'lucide-react';
 import FontCard from '@/components/ui/FontCard';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
@@ -13,20 +14,16 @@ import AddFontToProjectModal from '@/components/modals/AddFontToProjectModal';
 import EditProjectModal from '@/components/modals/EditProjectModal';
 import { cn } from '@/lib/utils';
 import { extractFirstUrl } from '@/utils/openGraph';
+import ImageLightbox from '@/components/ui/ImageLightbox';
+
 const ProjectDetails = () => {
-  const {
-    id
-  } = useParams<{
-    id: string;
-  }>();
+  const { id } = useParams<{ id: string; }>();
   const navigate = useNavigate();
-  const {
-    getProjectById,
-    fonts,
-    deleteProject
-  } = useFontContext();
+  const { getProjectById, fonts, deleteProject } = useFontContext();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [project, setProject] = useState(getProjectById(id || ''));
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Refresh project when id changes
   useEffect(() => {
@@ -51,8 +48,29 @@ const ProjectDetails = () => {
 
   // Extract URL from description if it exists
   const projectUrl = project?.description ? extractFirstUrl(project.description) : null;
+  
+  // Collect all images from the project
+  const allImages = React.useMemo(() => {
+    if (!project) return [];
+    
+    const images = [];
+    if (project.images && project.images.length > 0) {
+      images.push(...project.images);
+    }
+    if (project.previewImageUrl && !images.includes(project.previewImageUrl)) {
+      images.push(project.previewImageUrl);
+    }
+    return images;
+  }, [project]);
+
+  const openLightbox = (index: number) => {
+    setLightboxIndex(index);
+    setLightboxOpen(true);
+  };
+
   if (!project) {
-    return <div className="container mx-auto px-4 py-8">
+    return (
+      <div className="container mx-auto px-4 py-8">
         <div className="text-center py-12 bg-muted/30 rounded-lg">
           <h2 className="text-xl font-semibold mb-2">Project not found</h2>
           <p className="text-muted-foreground mb-4">The project you're looking for doesn't exist or has been removed</p>
@@ -63,13 +81,16 @@ const ProjectDetails = () => {
             </Link>
           </Button>
         </div>
-      </div>;
+      </div>
+    );
   }
 
   // Extract field from description - default to project name if not found
   const fieldMatch = project.description?.match(/Field:\s*([^\n]+)/);
   const field = fieldMatch ? fieldMatch[1].trim() : project.name.split(' ')[0];
-  return <div className="container mx-auto px-4 py-8 page-transition">
+
+  return (
+    <div className="container mx-auto px-4 py-8 page-transition">
       {/* Back link */}
       <div className="mb-6">
         <Button variant="ghost" asChild className="pl-0">
@@ -141,7 +162,8 @@ const ProjectDetails = () => {
             </div>
             
             {/* Link section */}
-            {projectUrl && <>
+            {projectUrl && (
+              <>
                 <Separator />
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-3">Link</h3>
@@ -150,23 +172,43 @@ const ProjectDetails = () => {
                     {projectUrl}
                   </a>
                 </div>
-              </>}
+              </>
+            )}
             
             {/* Images section */}
-            {(project.images && project.images.length > 0 || project.previewImageUrl) && <>
+            {allImages.length > 0 && (
+              <>
                 <Separator />
                 <div>
                   <h3 className="text-sm font-medium text-muted-foreground mb-3">Images:</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {project.images && project.images.map((image, index) => <div key={index} className="relative aspect-video rounded-md overflow-hidden border">
-                        <img src={image} alt={`Project ${project.name} image ${index + 1}`} className="w-full h-full object-cover" />
-                      </div>)}
-                    {project.previewImageUrl && !project.images?.includes(project.previewImageUrl) && <div className="relative aspect-video rounded-md overflow-hidden border">
-                        <img src={project.previewImageUrl} alt={`Project ${project.name} preview`} className="w-full h-full object-cover" />
-                      </div>}
+                    {allImages.map((image, index) => (
+                      <div 
+                        key={index} 
+                        className="relative aspect-video rounded-md overflow-hidden border group"
+                      >
+                        <img 
+                          src={image} 
+                          alt={`Project ${project.name} image ${index + 1}`} 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-end justify-end p-2">
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity gap-1 bg-background/80 hover:bg-background"
+                            onClick={() => openLightbox(index)}
+                          >
+                            <Maximize2 className="h-3.5 w-3.5" />
+                            Full-screen
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </>}
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -188,9 +230,14 @@ const ProjectDetails = () => {
         </div>
         <Separator className="mb-6" />
         
-        {projectFonts.length > 0 ? <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {projectFonts.map(font => <FontCard key={font.id} font={font} />)}
-          </div> : <div className="text-center py-12 bg-muted/10 rounded-lg border border-dashed">
+        {projectFonts.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {projectFonts.map(font => (
+              <FontCard key={font.id} font={font} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 bg-muted/10 rounded-lg border border-dashed">
             <p className="text-muted-foreground mb-4">No fonts have been added to this project yet</p>
             <AddFontToProjectModal projectId={project.id}>
               <Button className="gap-2">
@@ -198,8 +245,19 @@ const ProjectDetails = () => {
                 Add your first font
               </Button>
             </AddFontToProjectModal>
-          </div>}
+          </div>
+        )}
       </div>
+
+      {/* Lightbox Component */}
+      {allImages.length > 0 && (
+        <ImageLightbox 
+          images={allImages}
+          initialIndex={lightboxIndex}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -219,6 +277,8 @@ const ProjectDetails = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>;
+    </div>
+  );
 };
+
 export default ProjectDetails;
