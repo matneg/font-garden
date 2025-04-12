@@ -1,9 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Font } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Loader2, Sparkles, Link as LinkIcon } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { loadGoogleFont, getFontStyle } from '@/lib/fontLoader';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,12 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Link } from 'react-router-dom';
-
-interface FontPairingSuggestion {
-  name: string;
-  category: string;
-  reason: string;
-}
+import { fetchFontPairings, FontPairingSuggestion } from '@/lib/openrouter';
 
 interface FontPairingSuggestionsProps {
   font: Font;
@@ -42,77 +37,6 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
     // This ensures we never auto-generate, even on page refresh
   }, [font.id, storageKey]);
 
-  async function fetchFontPairings(fontName: string, fontCategory: string): Promise<FontPairingSuggestion[]> {
-    try {
-      // Fetch API key from Supabase
-      const { data: keyData, error: keyError } = await supabase
-        .from('api_keys')
-        .select('key_value')
-        .eq('name', 'openrouter')
-        .single();
-      
-      if (keyError || !keyData) {
-        console.error('Error fetching API key:', keyError);
-        throw new Error('Unable to access OpenRouter API key');
-      }
-      
-      const API_KEY = keyData.key_value;
-      const API_URL = "https://openrouter.ai/api/v1/chat/completions";
-      
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${API_KEY}`,
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "Type Garden Font Pairing",
-          "OR-SITE-URL": window.location.origin,
-          "OR-APP-NAME": "TypeGarden"
-        },
-        body: JSON.stringify({
-          model: "nvidia/llama-3.1-nemotron-nano-8b-v1:free",
-          messages: [
-            {
-              role: "user",
-              content: `You are a typography expert. Suggest 3 Google Font pairings for a ${fontCategory} font named "${fontName}". For each suggestion, explain why it pairs well. Respond in JSON format like this:
-              [
-                {
-                  "name": "Font Name",
-                  "category": "sans-serif/serif/display/etc",
-                  "reason": "Brief explanation why this pairs well"
-                },
-                ...
-              ]`
-            }
-          ],
-          "max_tokens": 500
-        })
-      });
-      
-      if (!response.ok) {
-        if (response.status === 402) {
-          throw new Error('OpenRouter API credits depleted or payment required. Please check your OpenRouter account.');
-        }
-        throw new Error(`API request failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Parse the JSON from the response content
-      const content = data.choices[0].message.content;
-      try {
-        const pairingSuggestions = JSON.parse(content);
-        return pairingSuggestions;
-      } catch (error) {
-        console.error("Failed to parse font pairings JSON:", error);
-        return [];
-      }
-    } catch (error) {
-      console.error("Error fetching font pairings:", error);
-      throw error;
-    }
-  }
-
   const handleFetchSuggestions = async () => {
     if (loading) return; // Prevent multiple simultaneous requests
     
@@ -125,40 +49,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
         return;
       }
       
-      // Use fallback pairings for testing without API calls
-      // Remove this in production or when API is working
-      /*
-      const fallbackPairings = [
-        {
-          name: "Roboto",
-          category: "sans-serif",
-          reason: "Roboto's clean lines and neutral character balance well with the personality of the font."
-        },
-        {
-          name: "Lora",
-          category: "serif",
-          reason: "Lora adds a touch of elegance and creates a nice contrast while maintaining readability."
-        },
-        {
-          name: "Work Sans",
-          category: "sans-serif",
-          reason: "Work Sans has a friendly feel that complements the font without competing for attention."
-        }
-      ];
-      
-      // Comment this out when using real API
-      setSuggestions(fallbackPairings);
-      setHasGenerated(true);
-      localStorage.setItem(storageKey, 'true');
-      toast.success("Font pairing suggestions generated successfully!");
-      
-      // Preload the suggested fonts
-      fallbackPairings.forEach(pair => {
-        loadGoogleFont(pair.name);
-      });
-      */
-      
-      // Uncomment this for real API usage
+      // Use the refactored fetchFontPairings function from openrouter.ts
       const pairings = await fetchFontPairings(font.name, font.category);
       setSuggestions(pairings);
       setHasGenerated(true);
@@ -183,30 +74,6 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
 
   // Get the current font style
   const currentFontStyle = getFontStyle(font);
-
-  // Check if API keys table exists on component mount
-  useEffect(() => {
-    const checkApiKeysTable = async () => {
-      if (!user) return;
-      
-      try {
-        const { count, error } = await supabase
-          .from('api_keys')
-          .select('*', { count: 'exact', head: true });
-        
-        if (error) {
-          console.error('Error checking API keys table:', error);
-          setError('API keys table not found. Please set up the API keys table in Supabase.');
-        }
-      } catch (err) {
-        console.error('Error checking API keys table:', err);
-      }
-    };
-    
-    if (user) {
-      checkApiKeysTable();
-    }
-  }, [user]);
 
   return (
     <Card className="mb-10">

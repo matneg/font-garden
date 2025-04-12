@@ -1,3 +1,4 @@
+
 // src/lib/openrouter.ts
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,16 +28,20 @@ export async function fetchFontPairings(
     const API_KEY = keyData.key_value;
     const API_URL = "https://openrouter.ai/api/v1/chat/completions";
     
+    console.log(`Sending request to OpenRouter for font pairings for ${fontName} (${fontCategory})`);
+    
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${API_KEY}`,
         "HTTP-Referer": window.location.origin,
-        "X-Title": "Type Garden Font Pairing"
+        "X-Title": "Font Garden Font Pairing",
+        "OR-Site-URL": window.location.origin,
+        "OR-App-Name": "FontGarden"
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3-haiku",
+        model: "nvidia/llama-3.1-nemotron-nano-8b-v1:free",
         messages: [
           {
             role: "user",
@@ -50,27 +55,48 @@ export async function fetchFontPairings(
               ...
             ]`
           }
-        ]
+        ],
+        max_tokens: 500,
+        temperature: 0.7
       })
     });
     
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`OpenRouter API error (${response.status}):`, errorText);
+      
+      if (response.status === 402) {
+        throw new Error('OpenRouter API credits depleted or payment required. Please check your OpenRouter account.');
+      }
+      throw new Error(`API request failed with status: ${response.status}`);
     }
     
     const data = await response.json();
+    console.log('OpenRouter API response:', data);
     
     // Parse the JSON from the response content
     const content = data.choices[0].message.content;
     try {
-      const pairingSuggestions = JSON.parse(content);
+      // Sometimes AI models might return text before or after the JSON
+      // Try to extract valid JSON using regex
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : content;
+      
+      const pairingSuggestions = JSON.parse(jsonStr);
+      
+      if (!Array.isArray(pairingSuggestions)) {
+        console.error("API returned non-array response:", pairingSuggestions);
+        throw new Error("API returned invalid format");
+      }
+      
+      console.log('Successfully parsed font pairings:', pairingSuggestions);
       return pairingSuggestions;
     } catch (error) {
-      console.error("Failed to parse font pairings JSON:", error);
-      return [];
+      console.error("Failed to parse font pairings JSON:", error, "Raw content:", content);
+      throw new Error("Failed to parse API response into valid font pairing suggestions");
     }
   } catch (error) {
     console.error("Error fetching font pairings:", error);
-    return [];
+    throw error;
   }
 }
