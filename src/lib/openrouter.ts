@@ -41,7 +41,7 @@ export async function fetchFontPairings(
         "OR-App-Name": "FontGarden"
       },
       body: JSON.stringify({
-        model: "nvidia/llama-3.1-nemotron-nano-8b-v1:free",
+        model: "google/gemini-2.5-pro-exp-03-25:free",
         messages: [
           {
             role: "user",
@@ -56,7 +56,7 @@ export async function fetchFontPairings(
             ]`
           }
         ],
-        max_tokens: 500,
+        max_tokens: 600,
         temperature: 0.7
       })
     });
@@ -89,8 +89,27 @@ export async function fetchFontPairings(
         throw new Error("API returned invalid format");
       }
       
-      console.log('Successfully parsed font pairings:', pairingSuggestions);
-      return pairingSuggestions;
+      // Validate each suggestion has the required fields
+      const validatedSuggestions = pairingSuggestions
+        .filter(suggestion => 
+          suggestion && 
+          typeof suggestion === 'object' && 
+          suggestion.name && 
+          suggestion.category && 
+          suggestion.reason
+        )
+        .map(suggestion => ({
+          name: String(suggestion.name),
+          category: String(suggestion.category),
+          reason: String(suggestion.reason)
+        }));
+      
+      if (validatedSuggestions.length === 0) {
+        throw new Error("No valid font pairing suggestions found in the response");
+      }
+      
+      console.log('Successfully parsed font pairings:', validatedSuggestions);
+      return validatedSuggestions;
     } catch (error) {
       console.error("Failed to parse font pairings JSON:", error, "Raw content:", content);
       throw new Error("Failed to parse API response into valid font pairing suggestions");

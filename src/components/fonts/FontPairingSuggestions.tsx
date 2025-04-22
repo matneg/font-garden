@@ -24,8 +24,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
   const [hasGenerated, setHasGenerated] = useState(false);
   const { user } = useAuth();
 
-  // IMPORTANT: We're using localStorage to remember if the component has already generated suggestions
-  // This prevents auto-generation even on component remount
+  // Storage key for this specific font
   const storageKey = `font-pairing-generated-${font.id}`;
   
   useEffect(() => {
@@ -48,6 +47,8 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
         setError('Please sign in to view font pairing suggestions.');
         return;
       }
+      
+      toast.info("Generating font pairing suggestions...");
       
       // Use the refactored fetchFontPairings function from openrouter.ts
       const pairings = await fetchFontPairings(font.name, font.category);
