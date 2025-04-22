@@ -1,4 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export interface FontPairingSuggestion {
   name: string;
@@ -86,13 +88,89 @@ export async function fetchFontPairings(
   fontCategory: string
 ): Promise<FontPairingSuggestion[]> {
   try {
-    // Since the OpenRouter API is having issues, we'll use the fallback suggestions for now
-    // This provides a more reliable user experience
-    console.log(`Using fallback suggestions for ${fontCategory} category instead of API call`);
+    const openRouterApiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
     
-    return fallbackSuggestions[fontCategory.toLowerCase()] || defaultFallback;
+    if (!openRouterApiKey) {
+      console.error("OpenRouter API key is not set");
+      throw new Error("API key not configured");
+    }
+    
+    const prompt = `
+      I need font pairing suggestions for a font called "${fontName}" which belongs to the "${fontCategory}" category.
+      Provide 3 font suggestions that would pair well with it.
+      For each suggestion, include the font name, its category (serif, sans-serif, display, monospace, etc.), and a brief explanation of why it pairs well.
+      Format your response as valid JSON with this structure:
+      [
+        {"name": "Font Name 1", "category": "font-category", "reason": "Explanation of why this pairs well"},
+        {"name": "Font Name 2", "category": "font-category", "reason": "Explanation of why this pairs well"},
+        {"name": "Font Name 3", "category": "font-category", "reason": "Explanation of why this pairs well"}
+      ]
+      Only include Google Fonts in your suggestions. Ensure the JSON is correctly formatted.
+    `;
+
+    console.log(`Fetching font pairings from OpenRouter for ${fontName} (${fontCategory})`);
+    
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openRouterApiKey}`,
+        "HTTP-Referer": window.location.origin,
+        "X-Title": "Font Garden"
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-3-haiku",
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 1024
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("OpenRouter API error:", errorData);
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("OpenRouter API response:", data);
+    
+    // Extract the content from the response
+    const content = data.choices[0].message.content;
+    
+    // Parse the JSON from the content
+    try {
+      // Find JSON array in the response (it might be wrapped in markdown code blocks)
+      const jsonMatch = content.match(/\[\s*\{.*\}\s*\]/s);
+      if (!jsonMatch) {
+        throw new Error("Could not find valid JSON in response");
+      }
+      
+      const jsonString = jsonMatch[0];
+      const suggestions = JSON.parse(jsonString);
+      
+      if (!Array.isArray(suggestions) || suggestions.length === 0) {
+        throw new Error("Invalid suggestions format");
+      }
+      
+      return suggestions.map(item => ({
+        name: item.name,
+        category: item.category,
+        reason: item.reason
+      }));
+    } catch (parseError) {
+      console.error("Error parsing OpenRouter response:", parseError);
+      console.error("Raw content:", content);
+      throw new Error("Failed to parse font pairing suggestions");
+    }
   } catch (error) {
     console.error("Error fetching font pairings:", error);
+    toast.error("Failed to generate font pairings from AI");
     
     const fallbacks = fallbackSuggestions[fontCategory.toLowerCase()] || defaultFallback;
     console.log(`Using fallback suggestions for ${fontCategory} category:`, fallbacks);

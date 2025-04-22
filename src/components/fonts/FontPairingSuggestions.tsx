@@ -22,7 +22,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasGenerated, setHasGenerated] = useState(false);
-  const [usingFallback, setUsingFallback] = useState(true); // Set to true since we're always using fallbacks for now
+  const [usingFallback, setUsingFallback] = useState(false);
   const { user } = useAuth();
 
   // Storage key for this specific font
@@ -42,7 +42,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
     
     setLoading(true);
     setError(null);
-    setUsingFallback(true); // Always using fallbacks for reliability
+    setUsingFallback(false);
     
     try {
       if (!user) {
@@ -50,10 +50,15 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
         return;
       }
       
-      toast.info("Generating font pairing suggestions...");
+      toast.info("Generating font pairing suggestions with AI...");
       
-      // Get font pairings (will return fallbacks for reliability)
+      // Get font pairings from the OpenRouter API
       const pairings = await fetchFontPairings(font.name, font.category);
+      
+      // Check if we're using fallbacks due to API error
+      setUsingFallback(pairings === fallbackSuggestions[font.category.toLowerCase()] || 
+                       pairings === defaultFallback);
+      
       setSuggestions(pairings);
       setHasGenerated(true);
       
@@ -65,12 +70,15 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
         loadGoogleFont(pair.name);
       });
       
-      toast.success("Font pairing suggestions generated successfully!");
+      toast.success(usingFallback 
+        ? "Using curated suggestions (API unavailable)" 
+        : "AI font pairing suggestions generated successfully!");
       
     } catch (err: any) {
       console.error('Error in handleFetchSuggestions:', err);
       setError(err.message || 'An unexpected error occurred.');
       toast.error("Failed to generate font pairings");
+      setUsingFallback(true);
     } finally {
       setLoading(false);
     }
@@ -105,7 +113,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Generating font pairing suggestions...</p>
+            <p className="text-sm text-muted-foreground">Generating font pairing suggestions with AI...</p>
           </div>
         ) : !user ? (
           <div className="text-center py-8">
@@ -131,7 +139,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
               <Sparkles className="h-16 w-16" />
             </div>
             <p className="text-muted-foreground mb-4">Discover perfect font pairings for your designs</p>
-            <p className="text-sm text-muted-foreground/70 mb-6">Click "Generate Suggestions" to get recommendations</p>
+            <p className="text-sm text-muted-foreground/70 mb-6">Click "Generate Suggestions" to get AI recommendations</p>
             <Button onClick={handleFetchSuggestions} className="gap-2">
               <Sparkles className="h-4 w-4" />
               Generate Suggestions
@@ -148,7 +156,7 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
                 <AlertTriangle className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-yellow-700">
                   <p className="font-medium">Using offline suggestions</p>
-                  <p className="mt-1">These are curated suggestions for {font.category} fonts. We're currently using a reliable offline database for consistent recommendations.</p>
+                  <p className="mt-1">These are curated suggestions for {font.category} fonts. We're using a reliable offline database since the AI service is currently unavailable.</p>
                 </div>
               </div>
             )}
