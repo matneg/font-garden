@@ -38,7 +38,7 @@ serve(async (req) => {
           "X-Title": "Font Garden"
         },
         body: JSON.stringify({
-          model: "gemini-pro", // Using a more reliable model
+          model: "meta-llama/llama-4-maverick:free",
           messages: [
             { role: "user", content: prompt }
           ]
@@ -75,7 +75,6 @@ serve(async (req) => {
       });
     } catch (apiError) {
       console.error('API error:', apiError);
-      // Return fallback suggestions in case of API error
       throw apiError;
     }
   } catch (error) {
@@ -99,7 +98,7 @@ serve(async (req) => {
         ] 
       }),
       { 
-        status: 200, // Return 200 but with error message and fallback suggestions
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
       }
     );
