@@ -13,6 +13,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { loadGoogleFont } from '@/lib/fontLoader';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 type FontPairing = {
   fontName: string;
@@ -31,17 +34,17 @@ const FontPairingSuggestions = ({ font }: FontPairingSuggestionsProps) => {
   const [suggestions, setSuggestions] = useState<FontPairing[]>([]);
 
   const fetchSuggestions = async () => {
-    if (suggestions.length > 0) return; // Don't fetch if we already have suggestions
+    if (suggestions.length > 0) return;
     
     setIsLoading(true);
     setError(null);
     
     try {
       const { data, error } = await supabase.functions.invoke('get-font-pairings', {
-        body: {
+        body: JSON.stringify({
           fontName: font.name,
           fontCategory: font.category
-        }
+        })
       });
 
       if (error) throw error;
@@ -92,34 +95,18 @@ const FontPairingSuggestions = ({ font }: FontPairingSuggestionsProps) => {
         <CollapsibleContent>
           <CardContent className="pt-0">
             {isLoading && (
-              <div className="flex justify-center py-8">
-                <svg 
-                  className="animate-spin h-8 w-8 text-primary" 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  fill="none" 
-                  viewBox="0 0 24 24"
-                >
-                  <circle 
-                    className="opacity-25" 
-                    cx="12" 
-                    cy="12" 
-                    r="10" 
-                    stroke="currentColor" 
-                    strokeWidth="4"
-                  />
-                  <path 
-                    className="opacity-75" 
-                    fill="currentColor" 
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
+              <div className="space-y-4">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
               </div>
             )}
 
             {error && (
-              <div className="text-destructive text-center py-4">
-                {error}
-              </div>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             {!isLoading && !error && suggestions.map((suggestion, index) => (
