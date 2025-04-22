@@ -106,12 +106,32 @@ export async function fetchFontPairings(
     const API_URL = "https://openrouter.ai/api/v1/chat/completions";
     
     console.log(`Sending request to OpenRouter for font pairings for ${fontName} (${fontCategory})`);
+    console.log('Origin:', window.location.origin);
     
-    // Set a timeout for the fetch request
+    // Create a controller for the fetch request to enable timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10-second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout
     
     try {
+      // Test CORS with a preflight OPTIONS request
+      const preflightResponse = await fetch(API_URL, {
+        method: 'OPTIONS',
+        headers: {
+          'Origin': window.location.origin,
+        },
+        mode: 'cors',
+        signal: controller.signal
+      }).catch(err => {
+        console.log('CORS preflight test failed:', err);
+        return null;
+      });
+      
+      if (preflightResponse) {
+        console.log('CORS preflight response status:', preflightResponse.status);
+        console.log('CORS preflight headers:', [...preflightResponse.headers.entries()]);
+      }
+      
+      // Actual API request
       const response = await fetch(API_URL, {
         method: "POST",
         headers: {
@@ -141,10 +161,14 @@ export async function fetchFontPairings(
           max_tokens: 600,
           temperature: 0.7
         }),
+        mode: 'cors',
         signal: controller.signal
       });
       
       clearTimeout(timeoutId);
+      
+      console.log('OpenRouter response status:', response.status);
+      console.log('OpenRouter response headers:', [...response.headers.entries()]);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -152,6 +176,10 @@ export async function fetchFontPairings(
         
         if (response.status === 402) {
           throw new Error('OpenRouter API credits depleted or payment required. Please check your OpenRouter account.');
+        } else if (response.status === 403) {
+          throw new Error('OpenRouter API access forbidden. Check API key permissions.');
+        } else if (response.status === 429) {
+          throw new Error('OpenRouter API rate limit exceeded. Please try again later.');
         }
         throw new Error(`API request failed with status: ${response.status}`);
       }
@@ -201,13 +229,22 @@ export async function fetchFontPairings(
       }
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      console.error("Network error with OpenRouter API:", fetchError);
       
       if (fetchError.name === 'AbortError') {
+        console.error("Request timed out after 15 seconds");
         throw new Error('Request timed out. The server took too long to respond.');
       }
       
-      throw fetchError;
+      // Enhanced network error reporting
+      console.error("Network error details:", {
+        error: fetchError,
+        message: fetchError.message,
+        type: fetchError.type,
+        code: fetchError.code,
+        stack: fetchError.stack
+      });
+      
+      throw new Error(`Network error: ${fetchError.message}. This might be due to CORS restrictions or network connectivity issues.`);
     }
   } catch (error) {
     console.error("Error fetching font pairings:", error);

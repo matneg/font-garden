@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Font } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Loader2, Sparkles, Link as LinkIcon, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Loader2, Sparkles, Link as LinkIcon, AlertTriangle, Info } from 'lucide-react';
 import { loadGoogleFont, getFontStyle } from '@/lib/fontLoader';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Link } from 'react-router-dom';
 import { fetchFontPairings, FontPairingSuggestion } from '@/lib/openrouter';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface FontPairingSuggestionsProps {
   font: Font;
@@ -21,8 +22,10 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
   const [suggestions, setSuggestions] = useState<FontPairingSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [diagnosticInfo, setDiagnosticInfo] = useState<string | null>(null);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [usingFallback, setUsingFallback] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const { user } = useAuth();
 
   // Storage key for this specific font
@@ -42,7 +45,9 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
     
     setLoading(true);
     setError(null);
+    setDiagnosticInfo(null);
     setUsingFallback(false);
+    setShowDiagnostics(false);
     
     try {
       if (!user) {
@@ -68,6 +73,18 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
         
         toast.success("Font pairing suggestions generated successfully!");
       } catch (err: any) {
+        // Capture detailed diagnostic information for troubleshooting
+        setDiagnosticInfo(JSON.stringify({
+          timestamp: new Date().toISOString(),
+          fontName: font.name,
+          fontCategory: font.category,
+          errorMessage: err.message,
+          errorName: err.name,
+          errorStack: err.stack,
+          browserInfo: navigator.userAgent,
+          origin: window.location.origin
+        }, null, 2));
+        
         // Check if fallback suggestions are available
         if (err.fallbackUsed && err.fallbackSuggestions) {
           console.log('Using fallback suggestions due to API error:', err.fallbackSuggestions);
@@ -138,11 +155,61 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
             </Button>
           </div>
         ) : error ? (
-          <div className="text-center py-8 space-y-4">
-            <p className="text-destructive">{error}</p>
-            <Button onClick={handleFetchSuggestions} variant="outline" size="sm">
-              Try Again
-            </Button>
+          <div className="space-y-4 py-4">
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Error Generating Suggestions</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+            
+            {diagnosticInfo && (
+              <div className="mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowDiagnostics(!showDiagnostics)}
+                  className="mb-2"
+                >
+                  <Info className="h-4 w-4 mr-2" />
+                  {showDiagnostics ? 'Hide Diagnostic Info' : 'Show Diagnostic Info'}
+                </Button>
+                
+                {showDiagnostics && (
+                  <div className="bg-muted p-4 rounded-md mt-2 overflow-x-auto">
+                    <pre className="text-xs whitespace-pre-wrap">{diagnosticInfo}</pre>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <div className="flex gap-2 mt-4">
+              <Button onClick={handleFetchSuggestions} variant="outline" size="sm">
+                Try Again
+              </Button>
+              
+              <Button 
+                onClick={() => {
+                  // Use fallback suggestions if an error occurs
+                  const fallbacks = fallbackSuggestions[font.category.toLowerCase()] || defaultFallback;
+                  setSuggestions(fallbacks);
+                  setUsingFallback(true);
+                  setHasGenerated(true);
+                  setError(null);
+                  
+                  // Store that we've generated for this font
+                  localStorage.setItem(storageKey, 'true');
+                  
+                  // Preload the fallback suggested fonts
+                  fallbacks.forEach(pair => {
+                    loadGoogleFont(pair.name);
+                  });
+                }} 
+                variant="outline" 
+                size="sm"
+              >
+                Use Offline Suggestions
+              </Button>
+            </div>
           </div>
         ) : !hasGenerated ? (
           <div className="text-center py-12">
@@ -217,5 +284,79 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
     </Card>
   );
 };
+
+// Import fallback suggestions from openrouter.ts
+const fallbackSuggestions = {
+  "sans-serif": [
+    {
+      name: "Playfair Display",
+      category: "serif",
+      reason: "The classic serif structure of Playfair Display creates a beautiful contrast with sans-serif fonts, giving designs a sophisticated editorial look."
+    },
+    {
+      name: "Lora",
+      category: "serif",
+      reason: "Lora has a balanced, modern serif design that pairs well with clean sans-serif fonts for readable and elegant typographic hierarchies."
+    },
+    {
+      name: "Nunito",
+      category: "sans-serif",
+      reason: "Nunito's rounded terminals provide a friendlier alternative while maintaining the clean lines that complement other sans-serif fonts."
+    }
+  ],
+  "serif": [
+    {
+      name: "Montserrat",
+      category: "sans-serif",
+      reason: "Montserrat's geometric structure creates a strong contrast with serif fonts, resulting in a balanced modern-classic pairing."
+    },
+    {
+      name: "Open Sans",
+      category: "sans-serif",
+      reason: "Open Sans has excellent readability and a neutral appearance that lets serif fonts shine while maintaining clear hierarchical structure."
+    },
+    {
+      name: "Roboto",
+      category: "sans-serif",
+      reason: "Roboto's clean lines and optimized legibility make it an ideal companion for more decorative serif typefaces."
+    }
+  ],
+  "display": [
+    {
+      name: "Poppins",
+      category: "sans-serif",
+      reason: "Poppins has a geometric style that grounds more expressive display fonts while maintaining a contemporary feel."
+    },
+    {
+      name: "Raleway",
+      category: "sans-serif",
+      reason: "Raleway's elegant thin weights and distinctive 'w' provide subtle character while letting display fonts take center stage."
+    },
+    {
+      name: "Work Sans",
+      category: "sans-serif",
+      reason: "Work Sans offers excellent readability for body text when paired with more attention-grabbing display typefaces."
+    }
+  ],
+  "monospace": [
+    {
+      name: "Source Sans Pro",
+      category: "sans-serif",
+      reason: "Source Sans Pro's clean design complements the technical feel of monospace fonts while improving readability for longer text."
+    },
+    {
+      name: "Merriweather",
+      category: "serif",
+      reason: "Merriweather adds warmth and contrast to the technical precision of monospace fonts with its high x-height and excellent readability."
+    },
+    {
+      name: "Nunito Sans",
+      category: "sans-serif",
+      reason: "Nunito Sans offers a friendly counterpoint to the more mechanical structure of monospace fonts."
+    }
+  ]
+};
+
+const defaultFallback = fallbackSuggestions["sans-serif"];
 
 export default FontPairingSuggestions;
