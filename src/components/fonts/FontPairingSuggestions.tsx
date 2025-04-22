@@ -16,6 +16,7 @@ import { loadGoogleFont } from '@/lib/fontLoader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 type FontPairing = {
   fontName: string;
@@ -40,6 +41,8 @@ const FontPairingSuggestions = ({ font }: FontPairingSuggestionsProps) => {
     setError(null);
     
     try {
+      console.log(`Fetching font pairing suggestions for ${font.name} (${font.category})`);
+      
       const { data, error } = await supabase.functions.invoke('get-font-pairings', {
         body: JSON.stringify({
           fontName: font.name,
@@ -48,18 +51,35 @@ const FontPairingSuggestions = ({ font }: FontPairingSuggestionsProps) => {
       });
 
       if (error) throw error;
+      console.log('Font pairing response:', data);
 
-      const { suggestions } = data;
-      setSuggestions(suggestions);
+      // Check if the API returned an error but still provided fallback suggestions
+      if (data.error) {
+        console.warn('API returned an error with fallback suggestions:', data.error);
+        setError('AI suggested some fonts, but encountered an issue: ' + data.error);
+        setSuggestions(data.suggestions || []);
+      } else {
+        const { suggestions: apiSuggestions } = data;
+        setSuggestions(apiSuggestions);
+      }
 
       // Preload suggested fonts
-      suggestions.forEach(suggestion => {
-        loadGoogleFont(suggestion.fontName);
-      });
+      if (data.suggestions) {
+        data.suggestions.forEach((suggestion: FontPairing) => {
+          loadGoogleFont(suggestion.fontName);
+        });
+      }
 
     } catch (err) {
       console.error('Error fetching font pairings:', err);
       setError('Failed to load font suggestions. Please try again later.');
+      
+      // Show toast notification for the error
+      toast({
+        title: "Error loading font suggestions",
+        description: "We couldn't load the font pairing suggestions. Please try again later.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +129,7 @@ const FontPairingSuggestions = ({ font }: FontPairingSuggestionsProps) => {
               </Alert>
             )}
 
-            {!isLoading && !error && suggestions.map((suggestion, index) => (
+            {!isLoading && suggestions.length > 0 && suggestions.map((suggestion, index) => (
               <div 
                 key={index}
                 className={cn(
@@ -142,6 +162,12 @@ const FontPairingSuggestions = ({ font }: FontPairingSuggestionsProps) => {
                 </div>
               </div>
             ))}
+
+            {!isLoading && !error && suggestions.length === 0 && (
+              <div className="py-4 text-center text-muted-foreground">
+                No font pairing suggestions available. Try refreshing the page.
+              </div>
+            )}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
