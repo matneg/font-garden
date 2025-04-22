@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useFontContext } from '@/context/FontContext';
@@ -44,7 +45,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { loadGoogleFont, loadCustomFont, getFontStyle } from '@/lib/fontLoader';
-import FontPairingSuggestions from '@/components/fonts/FontPairingSuggestions';
 
 const FontDetails = () => {
   const { id } = useParams<{ id: string; }>();
@@ -293,9 +293,6 @@ const FontDetails = () => {
               </CardContent>
             </Card>
           )}
-          
-          {/* Font Pairing Suggestions Section */}
-          <FontPairingSuggestions font={font} />
         </div>
         
         <div className="space-y-8">
