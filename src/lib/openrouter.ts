@@ -1,5 +1,3 @@
-
-// src/lib/openrouter.ts
 import { supabase } from '@/integrations/supabase/client';
 
 export interface FontPairingSuggestion {
@@ -90,53 +88,20 @@ export async function fetchFontPairings(
   try {
     console.log(`Attempting to fetch font pairings for ${fontName} (${fontCategory})`);
     
-    // Fetch API key from Supabase
-    const { data: keyData, error: keyError } = await supabase
-      .from('api_keys')
-      .select('key_value')
-      .eq('name', 'openrouter')
-      .single();
-    
-    if (keyError || !keyData) {
-      console.error('Error fetching API key:', keyError);
-      throw new Error('Unable to access OpenRouter API key');
-    }
-    
-    const API_KEY = keyData.key_value;
     const API_URL = "https://openrouter.ai/api/v1/chat/completions";
     
     console.log(`Sending request to OpenRouter for font pairings for ${fontName} (${fontCategory})`);
     console.log('Origin:', window.location.origin);
     
-    // Create a controller for the fetch request to enable timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15-second timeout
     
     try {
-      // Test CORS with a preflight OPTIONS request
-      const preflightResponse = await fetch(API_URL, {
-        method: 'OPTIONS',
-        headers: {
-          'Origin': window.location.origin,
-        },
-        mode: 'cors',
-        signal: controller.signal
-      }).catch(err => {
-        console.log('CORS preflight test failed:', err);
-        return null;
-      });
-      
-      if (preflightResponse) {
-        console.log('CORS preflight response status:', preflightResponse.status);
-        console.log('CORS preflight headers:', [...preflightResponse.headers.entries()]);
-      }
-      
-      // Actual API request
       const response = await fetch(API_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${API_KEY}`,
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENROUTER_API_KEY}`,
           "HTTP-Referer": window.location.origin,
           "X-Title": "Font Garden Font Pairing",
           "OR-Site-URL": window.location.origin,
@@ -187,11 +152,8 @@ export async function fetchFontPairings(
       const data = await response.json();
       console.log('OpenRouter API response:', data);
       
-      // Parse the JSON from the response content
       const content = data.choices[0].message.content;
       try {
-        // Sometimes AI models might return text before or after the JSON
-        // Try to extract valid JSON using regex
         const jsonMatch = content.match(/\[[\s\S]*\]/);
         const jsonStr = jsonMatch ? jsonMatch[0] : content;
         
@@ -202,7 +164,6 @@ export async function fetchFontPairings(
           throw new Error("API returned invalid format");
         }
         
-        // Validate each suggestion has the required fields
         const validatedSuggestions = pairingSuggestions
           .filter(suggestion => 
             suggestion && 
@@ -235,7 +196,6 @@ export async function fetchFontPairings(
         throw new Error('Request timed out. The server took too long to respond.');
       }
       
-      // Enhanced network error reporting
       console.error("Network error details:", {
         error: fetchError,
         message: fetchError.message,
@@ -249,11 +209,9 @@ export async function fetchFontPairings(
   } catch (error) {
     console.error("Error fetching font pairings:", error);
     
-    // Return fallback suggestions based on the font category if available
     const fallbacks = fallbackSuggestions[fontCategory.toLowerCase()] || defaultFallback;
     console.log(`Using fallback suggestions for ${fontCategory} category:`, fallbacks);
     
-    // Add note about using fallbacks in the error message
     error.fallbackUsed = true;
     error.fallbackSuggestions = fallbacks;
     throw error;
