@@ -1,5 +1,4 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface FontPairingSuggestion {
@@ -115,7 +114,7 @@ export async function fetchFontPairings(
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${openRouterApiKey}`,
-        "HTTP-Referer": window.location.origin,
+        "HTTP-Referer": window.location.origin, 
         "X-Title": "Font Garden"
       },
       body: JSON.stringify({
@@ -143,11 +142,12 @@ export async function fetchFontPairings(
     // Extract the content from the response
     const content = data.choices[0].message.content;
     
-    // Parse the JSON from the content
+    // Try to parse the JSON from the content
     try {
       // Find JSON array in the response (it might be wrapped in markdown code blocks)
       const jsonMatch = content.match(/\[\s*\{.*\}\s*\]/s);
       if (!jsonMatch) {
+        console.error("Could not find valid JSON in response content:", content);
         throw new Error("Could not find valid JSON in response");
       }
       
@@ -155,6 +155,7 @@ export async function fetchFontPairings(
       const suggestions = JSON.parse(jsonString);
       
       if (!Array.isArray(suggestions) || suggestions.length === 0) {
+        console.error("Invalid suggestions format:", suggestions);
         throw new Error("Invalid suggestions format");
       }
       
@@ -172,6 +173,7 @@ export async function fetchFontPairings(
     console.error("Error fetching font pairings:", error);
     toast.error("Failed to generate font pairings from AI");
     
+    // Return fallback suggestions for the specific font category
     const fallbacks = fallbackSuggestions[fontCategory.toLowerCase()] || defaultFallback;
     console.log(`Using fallback suggestions for ${fontCategory} category:`, fallbacks);
     

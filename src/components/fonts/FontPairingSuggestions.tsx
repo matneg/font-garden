@@ -11,8 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Link } from 'react-router-dom';
-import { fetchFontPairings, FontPairingSuggestion } from '@/lib/openrouter';
-import { fallbackSuggestions, defaultFallback } from '@/lib/openrouter';
+import { 
+  fetchFontPairings, 
+  FontPairingSuggestion,
+  fallbackSuggestions, 
+  defaultFallback 
+} from '@/lib/openrouter';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface FontPairingSuggestionsProps {
   font: Font;
@@ -57,8 +62,9 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
       const pairings = await fetchFontPairings(font.name, font.category);
       
       // Check if we're using fallbacks due to API error
-      setUsingFallback(pairings === fallbackSuggestions[font.category.toLowerCase()] || 
-                       pairings === defaultFallback);
+      const isFallback = pairings === fallbackSuggestions[font.category.toLowerCase()] || 
+                         pairings === defaultFallback;
+      setUsingFallback(isFallback);
       
       setSuggestions(pairings);
       setHasGenerated(true);
@@ -71,15 +77,27 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
         loadGoogleFont(pair.name);
       });
       
-      toast.success(usingFallback 
-        ? "Using curated suggestions (API unavailable)" 
-        : "AI font pairing suggestions generated successfully!");
+      if (isFallback) {
+        toast.warning("Using curated suggestions (AI service unavailable)");
+      } else {
+        toast.success("AI font pairing suggestions generated successfully!");
+      }
       
     } catch (err: any) {
       console.error('Error in handleFetchSuggestions:', err);
       setError(err.message || 'An unexpected error occurred.');
       toast.error("Failed to generate font pairings");
       setUsingFallback(true);
+      
+      // Try to use fallbacks when error occurs
+      try {
+        const fallbacks = fallbackSuggestions[font.category.toLowerCase()] || defaultFallback;
+        setSuggestions(fallbacks);
+        setHasGenerated(true);
+        localStorage.setItem(storageKey, 'true');
+      } catch (fallbackErr) {
+        console.error('Error setting fallback suggestions:', fallbackErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -125,10 +143,10 @@ const FontPairingSuggestions: React.FC<FontPairingSuggestionsProps> = ({ font })
           </div>
         ) : error ? (
           <div className="space-y-4 py-4">
-            <div className="bg-destructive/10 p-4 rounded-md text-destructive">
-              <p className="font-medium">Error generating suggestions</p>
-              <p className="text-sm mt-1">{error}</p>
-            </div>
+            <Alert variant="destructive">
+              <AlertTitle>Error generating suggestions</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
             
             <Button onClick={handleFetchSuggestions} variant="outline" size="sm">
               Try Again
