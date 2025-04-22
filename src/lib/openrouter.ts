@@ -9,7 +9,7 @@ export interface FontPairingSuggestion {
 }
 
 // Fallback suggestions in case the API fails
-const fallbackSuggestions: Record<string, FontPairingSuggestion[]> = {
+export const fallbackSuggestions: Record<string, FontPairingSuggestion[]> = {
   "sans-serif": [
     {
       name: "Playfair Display",
@@ -81,7 +81,7 @@ const fallbackSuggestions: Record<string, FontPairingSuggestion[]> = {
 };
 
 // Default fallback for any category not explicitly covered
-const defaultFallback = fallbackSuggestions["sans-serif"];
+export const defaultFallback = fallbackSuggestions["sans-serif"];
 
 export async function fetchFontPairings(
   fontName: string, 

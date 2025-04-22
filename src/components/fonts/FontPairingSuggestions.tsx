@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { Link } from 'react-router-dom';
 import { fetchFontPairings, FontPairingSuggestion } from '@/lib/openrouter';
+import { fallbackSuggestions, defaultFallback } from '@/lib/openrouter';
 
 interface FontPairingSuggestionsProps {
   font: Font;
